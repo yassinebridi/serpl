@@ -4,7 +4,7 @@ use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
 use ratatui::prelude::Rect;
 use redux_rs::{
-  middlewares::thunk::{self, thunk, ThunkMiddleware},
+  middlewares::thunk::{self, ThunkMiddleware},
   Selector, Store, StoreApi,
 };
 use serde::{Deserialize, Serialize};
@@ -189,7 +189,7 @@ impl App {
         match action {
           AppAction::Action(action) => {
             log::debug!("Redux action: {action:?}");
-            store.dispatch(action).await;
+            store.dispatch(thunk::ActionOrThunk::Action(action)).await;
           },
           AppAction::Thunk(action) => {
             log::debug!("Thunk action: {action:?}");

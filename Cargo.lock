@@ -2214,7 +2214,8 @@ dependencies = [
 [[package]]
 name = "redux-rs"
 version = "0.3.3"
-source = "git+https://github.com/redux-rs/redux-rs#2865896f358bdd364b204c72433de815f55683b4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86920873d78b1940a002bbfddc9a8c6acb52257c386fa9b2b709c426c66a16b5"
 dependencies = [
  "async-trait",
  "tokio",
