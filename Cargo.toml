@@ -1,0 +1,60 @@
+[package]
+name = "serpl"
+version = "0.1.0"
+edition = "2021"
+description = "VS Code like search and replace TUI"
+repository = "https://github.com/yassinebridi/serpl"
+authors = ["Yassine Bridi <ybridi@gmail.com>"]
+build = "build.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+better-panic = "0.3.0"
+clap = { version = "4.5.7", features = [
+    "derive",
+    "cargo",
+    "wrap_help",
+    "unicode",
+    "string",
+    "unstable-styles",
+] }
+color-eyre = "0.6.3"
+config = "0.14.0"
+crossterm = { version = "0.27.0", features = ["serde", "event-stream"] }
+derive_deref = "1.1.1"
+directories = "5.0.1"
+futures = "0.3.30"
+human-panic = "2.0.0"
+json5 = "0.4.1"
+lazy_static = "1.4.0"
+libc = "0.2.155"
+log = "0.4.21"
+pretty_assertions = "1.4.0"
+ratatui = { version = "0.26.3", features = ["serde", "macros"] }
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+signal-hook = "0.3.17"
+strip-ansi-escapes = "0.2.0"
+strum = { version = "0.26.2", features = ["derive"] }
+tokio = { version = "1.38.0", features = ["full"] }
+tokio-util = "0.7.11"
+tracing = "0.1.40"
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "serde"] }
+tui-input = "^0.8.0"
+tui-textarea = "^0.4.0"
+bat = "0.24.0"
+tui-logger = "0.11.1"
+grep-printer = "0.2.1"
+redux-rs = { git = "https://github.com/redux-rs/redux-rs", features = [
+    "middleware_thunk",
+] }
+simple-logging = "2.0.2"
+regex = "1.10.5"
+async-trait = "0.1.80"
+unicode-width = "0.1.13"
+textwrap = "0.16.1"
+
+[build-dependencies]
+vergen = { version = "8.3.1", features = ["build", "git", "gitoxide", "cargo"] }
