@@ -14,7 +14,16 @@ use tokio::sync::mpsc;
 use crate::{
   action::{AppAction, TuiAction},
   components::{
-    confirm_empty_replace_dialog::ConfirmEmptyReplaceDialog, confirm_git_dir_dialog::ConfirmGitDirDialog, notifications::{NotificationEnum, Notifications}, preview::Preview, replace::Replace, search::Search, search_result::SearchResult, small_help::SmallHelp, status::Status, Component
+    confirm_empty_replace_dialog::ConfirmEmptyReplaceDialog,
+    confirm_git_dir_dialog::ConfirmGitDirDialog,
+    notifications::{NotificationEnum, Notifications},
+    preview::Preview,
+    replace::Replace,
+    search::Search,
+    search_result::SearchResult,
+    small_help::SmallHelp,
+    status::Status,
+    Component,
   },
   config::Config,
   mode::Mode,

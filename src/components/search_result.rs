@@ -147,9 +147,8 @@ impl Component for SearchResult {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
 
-    let block = Block::bordered()
-      .border_type(BorderType::Rounded)
-      .title(Title::from("Details").alignment(Alignment::Left));
+    let block =
+      Block::bordered().border_type(BorderType::Rounded).title(Title::from("Details").alignment(Alignment::Left));
     let block = if state.active_tab == Tab::SearchResult {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {

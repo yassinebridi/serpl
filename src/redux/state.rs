@@ -51,7 +51,6 @@ pub enum ReplaceTextKind {
   PreserveCase,
 }
 
-
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Dialog {
   ConfirmGitDirectory(ConfirmDialog),

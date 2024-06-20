@@ -11,6 +11,8 @@ use crate::{
   tui::{Event, Frame},
 };
 
+pub mod confirm_empty_replace_dialog;
+pub mod confirm_git_dir_dialog;
 pub mod notifications;
 pub mod preview;
 pub mod replace;
@@ -18,8 +20,6 @@ pub mod search;
 pub mod search_result;
 pub mod small_help;
 pub mod status;
-pub mod confirm_git_dir_dialog;
-pub mod confirm_empty_replace_dialog;
 
 /// `Component` is a trait that represents a visual and interactive element of the user interface.
 /// Implementors of this trait can be registered with the main application loop and will be able to receive events,

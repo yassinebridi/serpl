@@ -17,7 +17,8 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{ReplaceTextKind, State}, thunk::ThunkAction,
+    state::{ReplaceTextKind, State},
+    thunk::ThunkAction,
   },
   tabs::Tab,
 };
