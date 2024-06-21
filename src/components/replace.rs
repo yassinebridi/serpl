@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use color_eyre::eyre::Result;
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
   prelude::*,
   widgets::{block::Title, *},
@@ -20,7 +20,7 @@ use crate::{
     state::{ReplaceTextKind, State},
     thunk::ThunkAction,
   },
-  tabs::Tab,
+  tabs::Tab, utils::is_git_repo,
 };
 
 #[derive(Default)]
@@ -58,9 +58,15 @@ impl Component for Replace {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.active_tab == Tab::Replace {
-      match key.code {
-        KeyCode::Tab | KeyCode::BackTab => Ok(None),
-        KeyCode::Enter => {
+      match (key.code, key.modifiers) {
+        (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+          let replace_text_kind = match state.replace_text.kind {
+            ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
+            ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
+          };
+          Ok(None)
+        },
+        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
             ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
@@ -69,7 +75,10 @@ impl Component for Replace {
           Ok(None)
         },
         _ => {
-          self.handle_input(key);
+          let is_git_folder = is_git_repo(state.project_root.clone());
+          if is_git_folder {
+            self.handle_input(key);
+          }
           Ok(None)
         },
       }

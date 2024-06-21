@@ -143,7 +143,7 @@ pub fn reducer(state: State, action: Action) -> State {
     },
     Action::ChangeMode { mode } => State { mode, ..state },
     Action::SetGlobalLoading { global_loading } => State { global_loading, ..state },
-    Action::ResetState => State::new(),
+    Action::ResetState => State::new(state.project_root.clone()),
     Action::SetNotification { message, show, ttl, color } => {
       State { notification: NotificationState { message, show, ttl, color }, ..state }
     },

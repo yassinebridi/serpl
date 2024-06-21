@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
@@ -46,10 +46,11 @@ pub struct App {
   pub should_suspend: bool,
   pub mode: Mode,
   pub last_tick_key_events: Vec<KeyEvent>,
+  pub project_root: PathBuf,
 }
 
 impl App {
-  pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
+  pub fn new(project_root: PathBuf) -> Result<Self> {
     let config = Config::new()?;
     let mode = Mode::Normal;
 
@@ -81,17 +82,22 @@ impl App {
       config,
       mode,
       last_tick_key_events: Vec::new(),
+      project_root,
     })
   }
 
   pub async fn run(&mut self) -> Result<()> {
-    let initial_state = State::new();
+    log::info!("Starting app..");
+    // log project root
+    log::info!("Project root: {:?}", self.project_root);
+    let initial_state = State::new(self.project_root.clone());
+    log::info!("Initial state: {:?}", initial_state);
     let store = Store::new_with_state(reducer, initial_state).wrap(ThunkMiddleware).await;
 
     let (action_tx, mut action_rx) = mpsc::unbounded_channel();
     let (redux_action_tx, mut redux_action_rx) = mpsc::unbounded_channel::<AppAction>();
 
-    let mut tui = tui::Tui::new()?.tick_rate(self.tick_rate).frame_rate(self.frame_rate);
+    let mut tui = tui::Tui::new()?;
     // tui.mouse(true);
     tui.enter()?;
 

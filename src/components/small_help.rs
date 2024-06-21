@@ -51,13 +51,15 @@ impl Component for SmallHelp {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
     let content = if state.active_tab == Tab::Search {
-      "Search mode: [Ctrl + s] to search, [Ctrl + r] to replace, [Ctrl + g] to switch to normal mode"
+      "Search: <Enter> search, <Tab> switch replace, <Ctrl-n> toggle search mode"
     } else if state.active_tab == Tab::Replace {
-      "Replace mode: [Ctrl + s] to search, [Ctrl + r] to replace, [Ctrl + g] to switch to normal mode"
+      "Replace: <C-o> replace, <Tab> switch search list, <Ctrl-n> toggle search mode"
     } else if state.active_tab == Tab::SearchResult {
-      "Search result mode: [Enter] to open file, [Ctrl + s] to search, [Ctrl + r] to replace, [Ctrl + g] to switch to normal mode"
+      "Search List: <Enter> open file, <Tab> switch search, <j> go next, <k> go previous, <g> go top, <G> go bottom, <d> delete file"
+    } else if state.active_tab == Tab::Preview {
+      "Preview: <Enter> go back to list, <Tab> switch search, <j> go next, <k> go previous, <g> go top, <G> go bottom, <d> delete line"
     } else {
-      "Preview mode: [Ctrl + s] to search, [Ctrl + r] to replace, [Ctrl + g] to switch to normal mode"
+      "<Ctrl-C> exit"
     };
 
     let small_help = SmallHelpWidget::new(content.to_string(), Color::Blue, Alignment::Left);
