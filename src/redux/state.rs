@@ -20,6 +20,7 @@ pub struct State {
   pub global_loading: bool,
   pub notification: NotificationState,
   pub dialog: Option<Dialog>,
+  pub project_root: PathBuf,
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -119,7 +120,10 @@ pub struct SubMatch {
 }
 
 impl State {
-  pub fn new() -> Self {
-    Self::default()
+  pub fn new(project_root: PathBuf) -> Self {
+    Self {
+      project_root,
+      ..Default::default()
+    }
   }
 }

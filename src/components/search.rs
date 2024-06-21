@@ -5,7 +5,7 @@ use std::{
 };
 
 use color_eyre::eyre::Result;
-use crossterm::event::{KeyCode, KeyEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
   layout::Position,
   prelude::*,
@@ -29,6 +29,7 @@ use crate::{
   },
   ripgrep::RipgrepOutput,
   tabs::Tab,
+  utils::is_git_repo,
 };
 
 #[derive(Default)]
@@ -68,9 +69,9 @@ impl Component for Search {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.active_tab == Tab::Search {
-      match key.code {
-        KeyCode::Tab | KeyCode::BackTab => Ok(None),
-        KeyCode::Enter => {
+      match (key.code, key.modifiers) {
+        (KeyCode::Tab, _) | (KeyCode::BackTab, _) => Ok(None),
+        (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
           let search_text_kind = match state.search_text.kind {
             SearchTextKind::Simple => SearchTextKind::MatchCase,
             SearchTextKind::MatchCase => SearchTextKind::MatchWholeWord,
@@ -81,8 +82,26 @@ impl Component for Search {
           self.change_kind(search_text_kind);
           Ok(None)
         },
-        _ => {
+        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+          let search_text_kind = match state.search_text.kind {
+            SearchTextKind::Simple => SearchTextKind::Regex,
+            SearchTextKind::MatchCase => SearchTextKind::Simple,
+            SearchTextKind::MatchWholeWord => SearchTextKind::MatchCase,
+            SearchTextKind::MatchCaseWholeWord => SearchTextKind::MatchWholeWord,
+            SearchTextKind::Regex => SearchTextKind::MatchCaseWholeWord,
+          };
+          self.change_kind(search_text_kind);
+          Ok(None)
+        },
+        (KeyCode::Enter, _) => {
           self.handle_input(key);
+          Ok(None)
+        },
+        _ => {
+          let is_git_folder = is_git_repo(state.project_root.clone());
+          if is_git_folder {
+            self.handle_input(key);
+          }
           Ok(None)
         },
       }

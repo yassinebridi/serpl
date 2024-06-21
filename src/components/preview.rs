@@ -61,6 +61,18 @@ impl Preview {
     }
   }
 
+  fn top(&mut self, state: &State) {
+    if !self.non_divider_lines.is_empty() {
+      self.lines_state.select(Some(self.non_divider_lines[0]));
+    }
+  }
+
+  fn bottom(&mut self, state: &State) {
+    if !self.non_divider_lines.is_empty() {
+      self.lines_state.select(Some(self.non_divider_lines[self.non_divider_lines.len() - 1]));
+    }
+  }
+
   fn delete_line(&mut self, selected_result_state: &SearchResultState) {
     if let Some(selected_index) = self.lines_state.selected() {
       let line_index = self.non_divider_lines.iter().position(|&index| index == selected_index).unwrap_or(0);
@@ -84,20 +96,29 @@ impl Component for Preview {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.active_tab == Tab::Preview {
-      match key.code {
-        KeyCode::Char('d') => {
+      match (key.code, key.modifiers) {
+        (KeyCode::Char('d'), _) => {
           self.delete_line(&state.selected_result);
           Ok(None)
         },
-        KeyCode::Char('j') | KeyCode::Down => {
+        (KeyCode::Char('g'), _) => {
+          self.top(state);
+          Ok(None)
+        },
+        (KeyCode::Char('G'), _) => {
+          self.bottom(state);
+          Ok(None)
+        },
+
+        (KeyCode::Char('j'), _) | (KeyCode::Down, _) => {
           self.next();
           Ok(None)
         },
-        KeyCode::Char('k') | KeyCode::Up => {
+        (KeyCode::Char('k'), _) | (KeyCode::Up, _) => {
           self.previous();
           Ok(None)
         },
-        KeyCode::Enter | KeyCode::Esc => {
+        (KeyCode::Enter, _) | (KeyCode::Esc, _) => {
           let action = AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult });
           self.command_tx.as_ref().unwrap().send(action).unwrap();
           Ok(None)

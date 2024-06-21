@@ -90,6 +90,43 @@ impl SearchResult {
     self.command_tx.as_ref().unwrap().send(action).unwrap();
   }
 
+  fn top(&mut self, state: &State) {
+    if state.search_result.list.is_empty() {
+      return;
+    }
+
+    self.state.select(Some(0));
+    let selected_result = state.search_result.list.first().unwrap();
+    let action = AppAction::Action(Action::SetSelectedResult {
+      result: SearchResultState {
+        index: selected_result.index,
+        path: selected_result.path.clone(),
+        matches: selected_result.matches.clone(),
+        total_matches: selected_result.total_matches,
+      },
+    });
+    self.command_tx.as_ref().unwrap().send(action).unwrap();
+  }
+
+  fn bottom(&mut self, state: &State) {
+    if state.search_result.list.is_empty() {
+      return;
+    }
+
+    let i = state.search_result.list.len() - 1;
+    self.state.select(Some(i));
+    let selected_result = state.search_result.list.get(i).unwrap();
+    let action = AppAction::Action(Action::SetSelectedResult {
+      result: SearchResultState {
+        index: selected_result.index,
+        path: selected_result.path.clone(),
+        matches: selected_result.matches.clone(),
+        total_matches: selected_result.total_matches,
+      },
+    });
+    self.command_tx.as_ref().unwrap().send(action).unwrap();
+  }
+
   fn calculate_total_matches(&mut self, search_result_state: &SearchResultState) -> &str {
     let total_matches: usize = search_result_state.matches.iter().map(|m| m.submatches.len()).sum();
     let total_matches_str = total_matches.to_string();
@@ -119,20 +156,28 @@ impl Component for SearchResult {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.active_tab == Tab::SearchResult {
-      match key.code {
-        KeyCode::Char('d') => {
+      match (key.code, key.modifiers) {
+        (KeyCode::Char('d'), _) => {
           self.delete_file(&state.selected_result);
           Ok(None)
         },
-        KeyCode::Char('j') => {
+        (KeyCode::Char('g'), _) => {
+          self.top(state);
+          Ok(None)
+        },
+        (KeyCode::Char('G'), _) => {
+          self.bottom(state);
+          Ok(None)
+        },
+        (KeyCode::Char('j'), _) => {
           self.next(state);
           Ok(None)
         },
-        KeyCode::Char('k') => {
+        (KeyCode::Char('k'), _) => {
           self.previous(state);
           Ok(None)
         },
-        KeyCode::Enter => {
+        (KeyCode::Enter, _) => {
           let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
           self.command_tx.as_ref().unwrap().send(action).unwrap();
           Ok(None)
@@ -155,13 +200,15 @@ impl Component for SearchResult {
       block
     };
 
+    let project_root = state.project_root.to_string_lossy();
     let list_items: Vec<ListItem> = state
       .search_result
       .list
       .iter()
       .map(|s| {
         let text = Line::from(vec![
-          Span::raw(&s.path),
+          // Display the relative path
+          Span::raw(s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path)),
           Span::raw(" ("),
           Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)),
           Span::raw(")"),
