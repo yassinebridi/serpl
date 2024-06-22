@@ -6,6 +6,22 @@ on:
       - main
 
 jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check commit message
+        id: check_commit
+        run: |
+          LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          if [[ "$LAST_COMMIT_MESSAGE" == "Bump version to "* ]]; then
+            echo "This is a version bump commit. Exiting."
+            exit 0
+          fi
+        continue-on-error: true  # Ensure this step does not fail the workflow
+         
   test:
     name: Test Suite
     runs-on: ubuntu-latest
@@ -80,7 +96,7 @@ jobs:
         run: |
           NEW_VERSION=${{ steps.bump_version.outputs.new_version }}
           git add .
-          git commit -m "Bump version to $NEW_VERSION and format code"
+          git commit -m "Bump version to $NEW_VERSION"
           git tag -a "$NEW_VERSION" -m "Release version $NEW_VERSION"
           git push origin main --tags
         env:
