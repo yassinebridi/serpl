@@ -6,25 +6,10 @@ on:
       - main
 
 jobs:
-  check-commit-message:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check commit message
-        id: check_commit
-        run: |
-          LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-          if [[ "$LAST_COMMIT_MESSAGE" == "Bump version to "* ]]; then
-            echo "This is a version bump commit. Exiting."
-            exit 78
-          fi
-         
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    needs: check-commit-message
+    if: "!contains(github.event.head_commit.message, 'Bump version to ')"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +22,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    needs: check-commit-message
+    if: "!contains(github.event.head_commit.message, 'Bump version to ')"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,7 +37,7 @@ jobs:
   docs:
     name: Docs
     runs-on: ubuntu-latest
-    needs: check-commit-message
+    if: "!contains(github.event.head_commit.message, 'Bump version to ')"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -67,7 +52,8 @@ jobs:
   bump-version:
     name: Bump Version
     runs-on: ubuntu-latest
-    needs: [test, clippy, docs, check-commit-message]
+    needs: [test, clippy, docs]
+    if: "!contains(github.event.head_commit.message, 'Bump version to ')"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
