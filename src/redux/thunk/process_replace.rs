@@ -159,7 +159,6 @@ where
 {
   async fn execute(&self, store: Arc<Api>) {
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
-    log::info!("Processing replace in {:?}", project_root);
     let force_replace = self.force_replace.0;
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;

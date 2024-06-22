@@ -68,7 +68,16 @@ impl Component for ConfirmGitDirDialog {
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if let Some(Dialog::ConfirmGitDirectory(dialog)) = &state.dialog {
       match key.code {
-        KeyCode::Tab | KeyCode::Down | KeyCode::Up | KeyCode::Right | KeyCode::Left | KeyCode::BackTab => {
+        KeyCode::Tab
+        | KeyCode::Down
+        | KeyCode::Up
+        | KeyCode::Right
+        | KeyCode::Left
+        | KeyCode::BackTab
+        | KeyCode::Char('j')
+        | KeyCode::Char('k')
+        | KeyCode::Char('h')
+        | KeyCode::Char('l') => {
           self.dialog_state.loop_selected_button();
           Ok(None)
         },

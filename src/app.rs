@@ -88,10 +88,7 @@ impl App {
 
   pub async fn run(&mut self) -> Result<()> {
     log::info!("Starting app..");
-    // log project root
-    log::info!("Project root: {:?}", self.project_root);
     let initial_state = State::new(self.project_root.clone());
-    log::info!("Initial state: {:?}", initial_state);
     let store = Store::new_with_state(reducer, initial_state).wrap(ThunkMiddleware).await;
 
     let (action_tx, mut action_rx) = mpsc::unbounded_channel();

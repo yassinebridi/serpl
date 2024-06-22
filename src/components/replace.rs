@@ -17,7 +17,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{ReplaceTextKind, State},
+    state::{FocusedScreen, ReplaceTextKind, State},
     thunk::ThunkAction,
   },
   tabs::Tab,
@@ -58,7 +58,7 @@ impl Component for Replace {
   }
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
-    if state.active_tab == Tab::Replace {
+    if state.focused_screen == FocusedScreen::ReplaceInput {
       match (key.code, key.modifiers) {
         (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
           let replace_text_kind = match state.replace_text.kind {

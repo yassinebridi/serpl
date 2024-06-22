@@ -6,7 +6,8 @@ use super::{action::Action, state::State};
 use crate::{
   mode::Mode,
   redux::state::{
-    Dialog, NotificationState, ReplaceTextState, SearchListState, SearchResultState, SearchTextKind, SearchTextState,
+    Dialog, FocusedScreen, NotificationState, ReplaceTextState, SearchListState, SearchResultState, SearchTextKind,
+    SearchTextState,
   },
   tabs::Tab,
 };
@@ -91,7 +92,16 @@ pub fn reducer(state: State, action: Action) -> State {
       if is_dialog_visible {
         return state;
       }
-      State { active_tab: tab, ..state }
+      State {
+        active_tab: tab,
+        focused_screen: match tab {
+          Tab::Search => FocusedScreen::SearchInput,
+          Tab::Replace => FocusedScreen::ReplaceInput,
+          Tab::SearchResult => FocusedScreen::SearchResultList,
+          Tab::Preview => FocusedScreen::Preview,
+        },
+        ..state
+      }
     },
     Action::LoopOverTabs => {
       let is_dialog_visible = match &state.dialog {
@@ -113,6 +123,12 @@ pub fn reducer(state: State, action: Action) -> State {
           Tab::Replace => Tab::SearchResult,
           Tab::SearchResult => Tab::Search,
           Tab::Preview => Tab::Preview,
+        },
+        focused_screen: match state.active_tab {
+          Tab::Search => FocusedScreen::ReplaceInput,
+          Tab::Replace => FocusedScreen::SearchResultList,
+          Tab::SearchResult => FocusedScreen::SearchInput,
+          Tab::Preview => FocusedScreen::Preview,
         },
         ..state
       }
@@ -138,6 +154,13 @@ pub fn reducer(state: State, action: Action) -> State {
           Tab::SearchResult => Tab::Replace,
           Tab::Preview => Tab::Preview,
         },
+        focused_screen: match state.active_tab {
+          Tab::Search => FocusedScreen::SearchResultList,
+          Tab::Replace => FocusedScreen::SearchInput,
+          Tab::SearchResult => FocusedScreen::ReplaceInput,
+          Tab::Preview => FocusedScreen::Preview,
+          
+        },
         ..state
       }
     },
@@ -147,6 +170,17 @@ pub fn reducer(state: State, action: Action) -> State {
     Action::SetNotification { message, show, ttl, color } => {
       State { notification: NotificationState { message, show, ttl, color }, ..state }
     },
-    Action::SetDialog { dialog } => State { dialog, ..state },
+    Action::SetDialog { dialog } => {
+      let temporary_dialog = dialog.clone();
+      State {
+        dialog,
+        focused_screen: match temporary_dialog {
+          Some(Dialog::ConfirmGitDirectory(_)) => FocusedScreen::ConfirmGitDirectoryDialog,
+          Some(Dialog::ConfirmReplace(_)) => FocusedScreen::ConfirmReplaceDialog,
+          _ => FocusedScreen::SearchInput,
+        },
+        ..state
+      }
+    },
   }
 }

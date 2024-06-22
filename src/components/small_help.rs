@@ -18,7 +18,11 @@ use crate::{
   components::notifications::NotificationEnum,
   config::{Config, KeyBindings},
   layout::get_layout,
-  redux::{action::Action, state::State, thunk::ThunkAction},
+  redux::{
+    action::Action,
+    state::{FocusedScreen, State},
+    thunk::ThunkAction,
+  },
   ripgrep::RipgrepOutput,
   tabs::Tab,
   ui::small_help_widget::SmallHelpWidget,
@@ -50,16 +54,13 @@ impl Component for SmallHelp {
 
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
-    let content = if state.active_tab == Tab::Search {
-      "Search: <Enter> search, <Tab> switch replace, <Ctrl-n> toggle search mode"
-    } else if state.active_tab == Tab::Replace {
-      "Replace: <C-o> replace, <Tab> switch search list, <Ctrl-n> toggle search mode"
-    } else if state.active_tab == Tab::SearchResult {
-      "Search List: <Enter> open file, <Tab> switch search, <j> go next, <k> go previous, <g> go top, <G> go bottom, <d> delete file"
-    } else if state.active_tab == Tab::Preview {
-      "Preview: <Enter> go back to list, <Tab> switch search, <j> go next, <k> go previous, <g> go top, <G> go bottom, <d> delete line"
-    } else {
-      "<Ctrl-C> exit"
+    let content = match state.focused_screen {
+      FocusedScreen::SearchInput => "Search: <Enter> | Switch to Replace: <Tab> | Toggle search mode: <Ctrl-n>",
+      FocusedScreen::ReplaceInput => "Replace: <C-o> | Switch to Search List: <Tab> | Toggle replace mode: <Ctrl-n>",
+      FocusedScreen::SearchResultList => "Open File: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete file: <d>",
+      FocusedScreen::Preview => "Back to list: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete line: <d>",
+      FocusedScreen::ConfirmReplaceDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
+      FocusedScreen::ConfirmGitDirectoryDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
     };
 
     let small_help = SmallHelpWidget::new(content.to_string(), Color::Blue, Alignment::Left);

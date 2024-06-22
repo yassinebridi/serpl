@@ -19,7 +19,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{SearchResultState, State},
+    state::{FocusedScreen, SearchResultState, State},
     thunk::ThunkAction,
   },
   tabs::Tab,
@@ -155,7 +155,7 @@ impl Component for SearchResult {
   }
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
-    if state.active_tab == Tab::SearchResult {
+    if state.focused_screen == FocusedScreen::SearchResultList {
       match (key.code, key.modifiers) {
         (KeyCode::Char('d'), _) => {
           self.delete_file(&state.selected_result);

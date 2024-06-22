@@ -40,7 +40,6 @@ where
   async fn execute(&self, store: Arc<Api>) {
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
-    log::info!("Project root: {:?}", project_root);
 
     // Ensure search_text is set
     if !search_text_state.text.is_empty() {
@@ -60,8 +59,6 @@ where
       let project_root_str = project_root.to_string_lossy();
       rg_args.push(&project_root_str);
 
-      // log args
-      log::info!("Ripgrep args: {:?}", rg_args);
       let output = Command::new("rg").args(&rg_args).output().expect("Failed to execute ripgrep");
 
       let stdout = String::from_utf8_lossy(&output.stdout);

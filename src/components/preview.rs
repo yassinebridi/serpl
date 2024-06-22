@@ -19,7 +19,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{ReplaceTextKind, SearchResultState, SearchTextKind, State, SubMatch},
+    state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State, SubMatch},
     thunk::ThunkAction,
   },
   tabs::Tab,
@@ -95,7 +95,7 @@ impl Component for Preview {
   }
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
-    if state.active_tab == Tab::Preview {
+    if state.focused_screen == FocusedScreen::Preview {
       match (key.code, key.modifiers) {
         (KeyCode::Char('d'), _) => {
           self.delete_line(&state.selected_result);

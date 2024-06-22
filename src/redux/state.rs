@@ -21,6 +21,18 @@ pub struct State {
   pub notification: NotificationState,
   pub dialog: Option<Dialog>,
   pub project_root: PathBuf,
+  pub focused_screen: FocusedScreen,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub enum FocusedScreen {
+  #[default]
+  SearchInput,
+  ReplaceInput,
+  SearchResultList,
+  Preview,
+  ConfirmGitDirectoryDialog,
+  ConfirmReplaceDialog,
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]

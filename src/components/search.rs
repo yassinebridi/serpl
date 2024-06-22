@@ -24,7 +24,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{SearchResultState, SearchTextKind, State},
+    state::{FocusedScreen, SearchResultState, SearchTextKind, State},
     thunk::ThunkAction,
   },
   ripgrep::RipgrepOutput,
@@ -67,7 +67,7 @@ impl Component for Search {
   }
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
-    if state.active_tab == Tab::Search {
+    if state.focused_screen == FocusedScreen::SearchInput {
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) => Ok(None),
         (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
