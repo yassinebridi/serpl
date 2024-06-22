@@ -91,6 +91,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full history is fetched, including tags
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -146,9 +148,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure full history is fetched, including tags
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo publish
+      - name: Fetch all tags
+        run: git fetch --tags
+      - name: Cargo publish
+        run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
