@@ -1,6 +1,6 @@
 [package]
 name = "serpl"
-version = "0.1.11"
+version = "0.1.12"
 edition = "2021"
 description = "VS Code like search and replace TUI"
 repository = "https://github.com/yassinebridi/serpl"
