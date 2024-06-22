@@ -2,46 +2,15 @@ name: CD # Continuous Deployment
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '[v]?[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  bump-version:
-    name: Bump Version
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Git
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-
-      - name: Bump Version
-        id: bump_version
-        run: |
-          CURRENT_VERSION=$(grep -E '^version = "[0-9]+\.[0-9]+\.[0-9]+"' Cargo.toml | sed -E 's/version = "(.*)"/\1/')
-          NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2"."$3+1}')
-          sed -i "s/version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-          echo "Bumped version from $CURRENT_VERSION to $NEW_VERSION"
-          echo "::set-output name=new_version::$NEW_VERSION"
-      
-      - name: Commit and Tag
-        run: |
-          NEW_VERSION=${{ steps.bump_version.outputs.new_version }}
-          git commit -am "Bump version to $NEW_VERSION"
-          git tag -a "$NEW_VERSION" -m "Release version $NEW_VERSION"
-          git push origin main --tags
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   publish:
+
     name: Publishing for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: bump-version
+
     strategy:
       matrix:
         include:
@@ -91,13 +60,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Ensure full history is fetched, including tags
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+
           target: ${{ matrix.target }}
+
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v2
@@ -105,57 +74,78 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
+
           use-cross: ${{ matrix.use-cross }}
+
           toolchain: stable
+
           args: --release --target ${{ matrix.target }}
-      - name: Install strip command
+
+
+      - name: install strip command
         shell: bash
         run: |
+
           if [[ ${{ matrix.target }} == aarch64-unknown-linux-gnu ]]; then
+
               sudo apt update
               sudo apt-get install -y binutils-aarch64-linux-gnu
           fi
       - name: Packaging final binary
         shell: bash
         run: |
+
           cd target/${{ matrix.target }}/release
+
+
+          ####### reduce binary size by removing debug symbols #######
+
           BINARY_NAME=${{ matrix.binary-name }}${{ matrix.binary-postfix }}
           if [[ ${{ matrix.target }} == aarch64-unknown-linux-gnu ]]; then
+
             GCC_PREFIX="aarch64-linux-gnu-"
           else
             GCC_PREFIX=""
           fi
           "$GCC_PREFIX"strip $BINARY_NAME
+
+          ########## create tar.gz ##########
+
           RELEASE_NAME=${{ matrix.binary-name }}-${GITHUB_REF/refs\/tags\//}-${{ matrix.os-name }}-${{ matrix.architecture }}
+
           tar czvf $RELEASE_NAME.tar.gz $BINARY_NAME
+
+          ########## create sha256 ##########
+
           if [[ ${{ runner.os }} == 'Windows' ]]; then
+
             certutil -hashfile $RELEASE_NAME.tar.gz sha256 | grep -E [A-Fa-f0-9]{64} > $RELEASE_NAME.sha256
           else
             shasum -a 256 $RELEASE_NAME.tar.gz > $RELEASE_NAME.sha256
+          fi
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
+
             target/${{ matrix.target }}/release/${{ matrix.binary-name }}-*.tar.gz
             target/${{ matrix.target }}/release/${{ matrix.binary-name }}-*.sha256
+
         env:
+
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   publish-cargo:
     name: Publishing to Cargo
     runs-on: ubuntu-latest
-    needs: bump-version
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Ensure full history is fetched, including tags
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Fetch all tags
-        run: git fetch --tags
-      - name: Cargo publish
-        run: cargo publish
+      - run: cargo publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
