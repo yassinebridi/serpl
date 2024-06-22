@@ -1,4 +1,4 @@
-name: CD # Continuous Deployment
+name: Publish
 
 on:
   push:
