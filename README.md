@@ -2,7 +2,7 @@
 
 `serpl` is a terminal user interface (TUI) application that allows users to search and replace keywords in an entire folder, similar to the functionality available in VS Code.
 
-https://github.com/yassinebridi/serpl/assets/18403595/e9ae508f-3f12-4633-9c11-2560052a3967
+https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff14a5d44453
 
 ## Table of Contents
 
