@@ -70,6 +70,9 @@ jobs:
           echo "Bumped version from $CURRENT_VERSION to $NEW_VERSION"
           echo "::set-output name=new_version::$NEW_VERSION"
       
+      - name: Update Cargo.lock
+        run: cargo update
+         
       - name: Format Code
         run: cargo fmt --all
 
@@ -78,7 +81,7 @@ jobs:
           NEW_VERSION=${{ steps.bump_version.outputs.new_version }}
           git add .
           git commit -m "Bump version to $NEW_VERSION and format code"
-          git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
+          git tag -a "$NEW_VERSION" -m "Release version $NEW_VERSION"
           git push origin main --tags
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
