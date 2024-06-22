@@ -20,7 +20,8 @@ use crate::{
     state::{ReplaceTextKind, State},
     thunk::ThunkAction,
   },
-  tabs::Tab, utils::is_git_repo,
+  tabs::Tab,
+  utils::is_git_repo,
 };
 
 #[derive(Default)]
@@ -75,10 +76,7 @@ impl Component for Replace {
           Ok(None)
         },
         _ => {
-          let is_git_folder = is_git_repo(state.project_root.clone());
-          if is_git_folder {
-            self.handle_input(key);
-          }
+          self.handle_input(key);
           Ok(None)
         },
       }
