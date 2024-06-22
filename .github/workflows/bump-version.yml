@@ -18,7 +18,7 @@ jobs:
           LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
           if [[ "$LAST_COMMIT_MESSAGE" == "Bump version to "* ]]; then
             echo "This is a version bump commit. Exiting."
-            exit 0
+            exit 1
           fi
          
   test:
