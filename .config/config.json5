@@ -5,14 +5,9 @@
       "<Ctrl-c>": "Quit", // Yet another way to quit
       "<Ctrl-z>": "Suspend", // Suspend the application
       "<Ctrl-r>": "Refresh",
-      "<i>": "InputMode",
       "<Tab>": "Tab",
       "<Backtab>": "BackTab",
       "<Ctrl-o>": "ProcessReplace",
     },
-    "Input": {
-      "<Esc>": "NormalMode",
-      "<j><k>": "NormalMode"
-    }
   }
 }
