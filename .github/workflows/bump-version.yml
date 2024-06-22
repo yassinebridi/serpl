@@ -20,12 +20,11 @@ jobs:
             echo "This is a version bump commit. Exiting."
             exit 0
           fi
-        continue-on-error: true  # Ensure this step does not fail the workflow
          
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    if: steps.check_commit.outputs.exit-code == '1'  # Skip if the commit message indicates a version bump
+    needs: check-commit-message
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,7 +37,7 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
-    if: steps.check_commit.outputs.exit-code == '1'  # Skip if the commit message indicates a version bump
+    needs: check-commit-message
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -53,7 +52,7 @@ jobs:
   docs:
     name: Docs
     runs-on: ubuntu-latest
-    if: steps.check_commit.outputs.exit-code == '1'  # Skip if the commit message indicates a version bump
+    needs: check-commit-message
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,7 +67,7 @@ jobs:
   bump-version:
     name: Bump Version
     runs-on: ubuntu-latest
-    needs: [test, clippy, docs]
+    needs: [test, clippy, docs, check-commit-message]
     if: steps.check_commit.outputs.exit-code == '1'  # Skip if the commit message indicates a version bump
     steps:
       - name: Checkout repository
