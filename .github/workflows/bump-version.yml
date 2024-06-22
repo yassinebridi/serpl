@@ -68,7 +68,6 @@ jobs:
     name: Bump Version
     runs-on: ubuntu-latest
     needs: [test, clippy, docs, check-commit-message]
-    if: steps.check_commit.outputs.exit-code == '1'  # Skip if the commit message indicates a version bump
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
