@@ -44,16 +44,12 @@ impl Search {
     Self::default()
   }
 
-  fn handle_input(&mut self, key: KeyEvent, state: &State) {
-    self.input.handle_event(&crossterm::event::Event::Key(key));
-    let is_git_folder = is_git_repo(state.project_root.clone());
-    if is_git_folder {
-      let query = self.input.value();
-      let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
-      let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
-      self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
-      self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
-    }
+  fn handle_input(&mut self, key: KeyEvent) {
+    let query = self.input.value();
+    let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
+    let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
+    self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
+    self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
   }
 
   fn change_kind(&mut self, search_text_kind: SearchTextKind) {
@@ -97,11 +93,15 @@ impl Component for Search {
           Ok(None)
         },
         (KeyCode::Enter, _) => {
-          self.handle_input(key, state);
+          self.handle_input(key);
           Ok(None)
         },
         _ => {
-          self.handle_input(key, state);
+          self.input.handle_event(&crossterm::event::Event::Key(key));
+          let is_git_folder = is_git_repo(state.project_root.clone());
+          if is_git_folder {
+            self.handle_input(key);
+          }
           Ok(None)
         },
       }
