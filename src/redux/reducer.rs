@@ -159,7 +159,6 @@ pub fn reducer(state: State, action: Action) -> State {
           Tab::Replace => FocusedScreen::SearchInput,
           Tab::SearchResult => FocusedScreen::ReplaceInput,
           Tab::Preview => FocusedScreen::Preview,
-          
         },
         ..state
       }
