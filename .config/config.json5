@@ -1,8 +1,8 @@
 {
   "keybindings": {
-    "<Ctrl-d>": "Quit", // Another way to quit
-    "<Ctrl-c>": "Quit", // Yet another way to quit
-    "<Ctrl-z>": "Suspend", // Suspend the application
+    "<Ctrl-d>": "Quit",
+    "<Ctrl-c>": "Quit",
+    "<Ctrl-z>": "Suspend",
     "<Ctrl-r>": "Refresh",
     "<Tab>": "Tab",
     "<Backtab>": "BackTab",
