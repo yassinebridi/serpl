@@ -44,16 +44,10 @@ tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "serde"] }
 tui-input = "^0.8.0"
-tui-textarea = "^0.4.0"
-bat = "0.24.0"
-tui-logger = "0.11.1"
-grep-printer = "0.2.1"
 redux-rs = { version = "0.3.3", features = ["middleware_thunk"] }
 simple-logging = "2.0.2"
 regex = "1.10.5"
 async-trait = "0.1.80"
-unicode-width = "0.1.13"
-textwrap = "0.16.1"
 
 [build-dependencies]
 vergen = { version = "8.3.1", features = ["build", "git", "gitoxide", "cargo"] }
