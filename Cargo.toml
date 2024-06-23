@@ -24,7 +24,7 @@ color-eyre = "0.6.3"
 config = "0.14.0"
 crossterm = { version = "0.27.0", features = ["serde", "event-stream"] }
 derive_deref = "1.1.1"
-directories = "5.0.1"
+etcetera = "0.8.0"
 futures = "0.3.30"
 human-panic = "1.2.3"
 json5 = "0.4.1"
@@ -48,6 +48,7 @@ redux-rs = { version = "0.3.3", features = ["middleware_thunk"] }
 simple-logging = "2.0.2"
 regex = "1.10.5"
 async-trait = "0.1.80"
+anyhow = "1.0.86"
 
 [build-dependencies]
 vergen = { version = "8.3.1", features = ["build", "git", "gitoxide", "cargo"] }

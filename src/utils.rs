@@ -1,7 +1,8 @@
 use std::path::PathBuf;
 
-use color_eyre::eyre::Result;
-use directories::ProjectDirs;
+use anyhow::{Context, Result};
+use color_eyre::eyre::Result as EyreResult;
+use etcetera::{choose_app_strategy, AppStrategy, AppStrategyArgs};
 use lazy_static::lazy_static;
 use tracing::error;
 use tracing_error::ErrorLayer;
@@ -20,11 +21,35 @@ lazy_static! {
   pub static ref LOG_FILE: String = format!("{}.log", env!("CARGO_PKG_NAME"));
 }
 
-fn project_directory() -> Option<ProjectDirs> {
-  ProjectDirs::from("com", "kdheepak", env!("CARGO_PKG_NAME"))
+const APP_QUALIFIER: &str = "com";
+const APP_ORG: &str = "yassinebridi";
+const APP_NAME: &str = "serpl";
+
+pub fn strategy() -> Result<impl AppStrategy> {
+  choose_app_strategy(AppStrategyArgs {
+    top_level_domain: APP_QUALIFIER.to_owned(),
+    author: APP_ORG.to_owned(),
+    app_name: APP_NAME.to_owned(),
+  })
+  .context("Failed to create app strategy")
 }
 
-pub fn initialize_panic_handler() -> Result<()> {
+pub fn config_directory() -> Result<PathBuf> {
+  Ok(strategy()?.config_dir())
+}
+pub fn data_directory() -> Result<PathBuf> {
+  Ok(strategy()?.data_dir())
+}
+
+pub fn state() -> Result<PathBuf> {
+  let strategy = strategy()?;
+  match strategy.state_dir() {
+    Some(path) => Ok(path),
+    None => Ok(strategy.data_dir()),
+  }
+}
+
+pub fn initialize_panic_handler() -> EyreResult<()> {
   let (panic_hook, eyre_hook) = color_eyre::config::HookBuilder::default()
     .panic_section(format!("This is a bug. Consider reporting it at {}", env!("CARGO_PKG_REPOSITORY")))
     .capture_span_trace_by_default(false)
@@ -73,25 +98,23 @@ pub fn initialize_panic_handler() -> Result<()> {
 }
 
 pub fn get_data_dir() -> PathBuf {
-  let directory = if let Some(s) = DATA_FOLDER.clone() {
+  if let Some(s) = DATA_FOLDER.clone() {
     s
-  } else if let Some(proj_dirs) = project_directory() {
-    proj_dirs.data_local_dir().to_path_buf()
+  } else if let Ok(data_dir) = data_directory() {
+    data_dir
   } else {
     PathBuf::from(".").join(".data")
-  };
-  directory
+  }
 }
 
 pub fn get_config_dir() -> PathBuf {
-  let directory = if let Some(s) = CONFIG_FOLDER.clone() {
+  if let Some(s) = CONFIG_FOLDER.clone() {
     s
-  } else if let Some(proj_dirs) = project_directory() {
-    proj_dirs.config_local_dir().to_path_buf()
+  } else if let Ok(config_dir) = config_directory() {
+    config_dir
   } else {
     PathBuf::from(".").join(".config")
-  };
-  directory
+  }
 }
 
 pub fn initialize_logging() -> Result<()> {
@@ -155,11 +178,10 @@ pub fn version() -> String {
 
 Authors: {author}
 
-Config directory: {config_dir_path}
-Data directory: {data_dir_path}"
+Config directory: {config_dir_path}"
   )
 }
- 
+
 pub fn is_git_repo(path: PathBuf) -> bool {
   let git_dir = path.join(".git");
   git_dir.exists()
