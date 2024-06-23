@@ -83,8 +83,8 @@ Default key bindings can be customized through the `config.json` file.
 | Key Combination              | Action                            |
 | ---------------------------- | --------------------------------- |
 | `Ctrl + c`                   | Quit                              |
-| `Tab`                        | Switch between input fields       |
-| `Backtab`                    | Switch to previous input field    |
+| `Tab`                        | Switch between tabs               |
+| `Backtab`                    | Switch to previous tabs           |
 | `Ctrl + o`                   | Process replace                   |
 | `Ctrl + n`                   | Toggle search mode                |
 | `Ctrl + p`                   | Toggle replace mode               |
@@ -100,25 +100,78 @@ Default key bindings can be customized through the `config.json` file.
 
 ### Configuration
 
-`serpl` uses a `config.json` file to manage key bindings and other settings. By default, this file is located in the project's config directory.
+`serpl` uses a configuration file to manage key bindings and other settings. By default, the path to the configuration file can be found by running `serpl --version`. You can use various file formats for the configuration, such as JSON, JSON5, YAML, TOML, or INI.
 
-Example `config.json`:
+#### Example Configurations
 
+<details>
+<summary>JSON</summary>
+ 
 ```json
 {
   "keybindings": {
     "<Ctrl-d>": "Quit",
     "<Ctrl-c>": "Quit",
-    "<Ctrl-z>": "Suspend",
-    "<Ctrl-r>": "Refresh",
-    "<Tab>": "Tab",
-    "<Backtab>": "BackTab",
+    "<Tab>": "LoopOverTabs",
+    "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace"
   }
 }
 ```
+</details>
+<details>
+<summary>JSON5</summary>
+ 
+```json5
+{
+  keybindings: {
+    "<Ctrl-d>": "Quit",
+    "<Ctrl-c>": "Quit",
+    "<Tab>": "LoopOverTabs",
+    "<Backtab>": "BackLoopOverTabs",
+    "<Ctrl-o>": "ProcessReplace",
+  },
+}
+```
+</details>
+<details>
+<summary>YAML</summary>
+ 
+```yaml
+keybindings:
+  "<Ctrl-d>": "Quit"
+  "<Ctrl-c>": "Quit"
+  "<Tab>": "LoopOverTabs"
+  "<Backtab>": "BackLoopOverTabs"
+  "<Ctrl-o>": "ProcessReplace"
+```
+</details>
+<details>
+<summary>TOML</summary>
+ 
+```toml
+[keybindings]
+"<Ctrl-d>" = "Quit"
+"<Ctrl-c>" = "Quit"
+"<Tab>" = "LoopOverTabs"
+"<Backtab>" = "BackLoopOverTabs"
+"<Ctrl-o>" = "ProcessReplace"
+```
+</details>
+<details>
+<summary>INI</summary>
+ 
+```ini
+[keybindings]
+<Ctrl-d> = Quit
+<Ctrl-c> = Quit
+<Tab> = LoopOverTabs
+<Backtab> = BackLoopOverTabs
+<Ctrl-o> = ProcessReplace
+```
+</details>
 
-You can customize the key bindings by modifying the `config.json` file.
+You can customize the key bindings by modifying the configuration file in the format of your choice.
 
 ## Screens
 

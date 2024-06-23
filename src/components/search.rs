@@ -100,7 +100,11 @@ impl Component for Search {
           self.input.handle_event(&crossterm::event::Event::Key(key));
           let is_git_folder = is_git_repo(state.project_root.clone());
           if is_git_folder {
-            self.handle_input(key);
+            let key_bindings = self.config.keybindings.clone();
+            let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
+            if !is_quit_key(&quit_keys, &key) {
+              self.handle_input(key);
+            }
           }
           Ok(None)
         },
@@ -161,4 +165,32 @@ impl Component for Search {
     f.render_widget(search_widget, layout.search_input);
     Ok(())
   }
+}
+
+fn find_keys_for_value(
+  key_bindings: &HashMap<Vec<KeyEvent>, AppAction>,
+  quit: AppAction,
+) -> Option<Vec<Vec<KeyEvent>>> {
+  let mut quit_keys = Vec::new();
+  for (key, value) in key_bindings.iter() {
+    if value == &quit {
+      quit_keys.push(key.clone());
+    }
+  }
+  if quit_keys.is_empty() {
+    None
+  } else {
+    Some(quit_keys)
+  }
+}
+
+fn is_quit_key(quit_keys: &Option<Vec<Vec<KeyEvent>>>, key: &KeyEvent) -> bool {
+  if let Some(quit_keys) = quit_keys {
+    for keys in quit_keys {
+      if keys.contains(key) {
+        return true;
+      }
+    }
+  }
+  false
 }

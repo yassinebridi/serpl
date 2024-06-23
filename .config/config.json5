@@ -4,8 +4,8 @@
     "<Ctrl-c>": "Quit",
     "<Ctrl-z>": "Suspend",
     "<Ctrl-r>": "Refresh",
-    "<Tab>": "Tab",
-    "<Backtab>": "BackTab",
+    "<Tab>": "LoopOverTabs",
+    "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
   }
 }
