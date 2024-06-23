@@ -159,7 +159,7 @@ Config directory: {config_dir_path}
 Data directory: {data_dir_path}"
   )
 }
- 
+
 pub fn is_git_repo(path: PathBuf) -> bool {
   let git_dir = path.join(".git");
   git_dir.exists()
