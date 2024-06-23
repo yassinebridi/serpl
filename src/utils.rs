@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use color_eyre::eyre::Result;
 use directories::ProjectDirs;
@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 fn project_directory() -> Option<ProjectDirs> {
-  ProjectDirs::from("com", "yassinebridi", env!("CARGO_PKG_NAME"))
+  ProjectDirs::from("com", "kdheepak", env!("CARGO_PKG_NAME"))
 }
 
 pub fn initialize_panic_handler() -> Result<()> {
@@ -39,21 +39,21 @@ pub fn initialize_panic_handler() -> Result<()> {
       }
     }
 
-    #[cfg(not(debug_assertions))]
-    {
-      use human_panic::{handle_dump, print_msg, Metadata};
-      let meta = Metadata {
-        version: env!("CARGO_PKG_VERSION").into(),
-        name: env!("CARGO_PKG_NAME").into(),
-        authors: env!("CARGO_PKG_AUTHORS").replace(':', ", ").into(),
-        homepage: env!("CARGO_PKG_HOMEPAGE").into(),
-      };
-
-      let file_path = handle_dump(&meta, panic_info);
-      // prints human-panic message
-      print_msg(file_path, &meta).expect("human-panic: printing error message to console failed");
-      eprintln!("{}", panic_hook.panic_report(panic_info)); // prints color-eyre stack trace to stderr
-    }
+    // #[cfg(not(debug_assertions))]
+    // {
+    //   use human_panic::{handle_dump, print_msg, Metadata};
+    //   let meta = Metadata {
+    //     version: env!("CARGO_PKG_VERSION").into(),
+    //     name: env!("CARGO_PKG_NAME").into(),
+    //     authors: env!("CARGO_PKG_AUTHORS").replace(':', ", ").into(),
+    //     homepage: env!("CARGO_PKG_HOMEPAGE").into(),
+    //   };
+    //
+    //   let file_path = handle_dump(&meta, panic_info);
+    //   // prints human-panic message
+    //   print_msg(file_path, &meta).expect("human-panic: printing error message to console failed");
+    //   eprintln!("{}", panic_hook.panic_report(panic_info)); // prints color-eyre stack trace to stderr
+    // }
     let msg = format!("{}", panic_hook.panic_report(panic_info));
     log::error!("Error: {}", strip_ansi_escapes::strip_str(msg));
 
@@ -99,14 +99,12 @@ pub fn initialize_logging() -> Result<()> {
   std::fs::create_dir_all(directory.clone())?;
   let log_path = directory.join(LOG_FILE.clone());
   let log_file = std::fs::File::create(log_path)?;
-  unsafe {
-    std::env::set_var(
-      "RUST_LOG",
-      std::env::var("RUST_LOG")
-        .or_else(|_| std::env::var(LOG_ENV.clone()))
-        .unwrap_or_else(|_| format!("{}=info", env!("CARGO_CRATE_NAME"))),
-    )
-  };
+  std::env::set_var(
+    "RUST_LOG",
+    std::env::var("RUST_LOG")
+      .or_else(|_| std::env::var(LOG_ENV.clone()))
+      .unwrap_or_else(|_| format!("{}=info", env!("CARGO_CRATE_NAME"))),
+  );
   let file_subscriber = tracing_subscriber::fmt::layer()
     .with_file(true)
     .with_line_number(true)
@@ -161,7 +159,7 @@ Config directory: {config_dir_path}
 Data directory: {data_dir_path}"
   )
 }
-
+ 
 pub fn is_git_repo(path: PathBuf) -> bool {
   let git_dir = path.join(".git");
   git_dir.exists()
