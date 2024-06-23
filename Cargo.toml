@@ -2,7 +2,7 @@
 name = "serpl"
 version = "0.1.23"
 edition = "2021"
-description = "VS Code like search and replace TUI"
+description = "A simple terminal UI for search and replace, ala VS Code"
 repository = "https://github.com/yassinebridi/serpl"
 authors = ["Yassine Bridi <ybridi@gmail.com>"]
 build = "build.rs"
