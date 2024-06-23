@@ -119,30 +119,28 @@ impl App {
           tui::Event::Render => action_tx.send(AppAction::Tui(TuiAction::Render))?,
           tui::Event::Resize(x, y) => action_tx.send(AppAction::Tui(TuiAction::Resize(x, y)))?,
           tui::Event::Key(key) => {
-            if let Some(keymap) = self.config.keybindings.get(&self.mode) {
-              if let Some(app_action) = keymap.get(&vec![key]) {
+            if let Some(app_action) = self.config.keybindings.get(&vec![key]) {
+              log::info!("Got action: {app_action:?}");
+              match app_action {
+                AppAction::Tui(action) => action_tx.send(AppAction::Tui(action.clone()))?,
+                AppAction::Action(action) => redux_action_tx.send(AppAction::Action(action.clone()))?,
+                AppAction::Thunk(action) => redux_action_tx.send(AppAction::Thunk(action.clone()))?,
+              }
+            } else {
+              // If the key was not handled as a single key action,
+              // then consider it for multi-key combinations.
+              self.last_tick_key_events.push(key);
+
+              // Check for multi-key combinations
+              if let Some(app_action) = self.config.keybindings.get(&self.last_tick_key_events) {
                 log::info!("Got action: {app_action:?}");
                 match app_action {
                   AppAction::Tui(action) => action_tx.send(AppAction::Tui(action.clone()))?,
                   AppAction::Action(action) => redux_action_tx.send(AppAction::Action(action.clone()))?,
                   AppAction::Thunk(action) => redux_action_tx.send(AppAction::Thunk(action.clone()))?,
                 }
-              } else {
-                // If the key was not handled as a single key action,
-                // then consider it for multi-key combinations.
-                self.last_tick_key_events.push(key);
-
-                // Check for multi-key combinations
-                if let Some(app_action) = keymap.get(&self.last_tick_key_events) {
-                  log::info!("Got action: {app_action:?}");
-                  match app_action {
-                    AppAction::Tui(action) => action_tx.send(AppAction::Tui(action.clone()))?,
-                    AppAction::Action(action) => redux_action_tx.send(AppAction::Action(action.clone()))?,
-                    AppAction::Thunk(action) => redux_action_tx.send(AppAction::Thunk(action.clone()))?,
-                  }
-                }
               }
-            };
+            }
           },
           _ => {},
         }

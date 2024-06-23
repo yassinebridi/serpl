@@ -65,12 +65,11 @@ impl Config {
 
     let mut cfg: Self = builder.build()?.try_deserialize()?;
 
-    for (mode, default_bindings) in default_config.keybindings.iter() {
-      let user_bindings = cfg.keybindings.entry(*mode).or_default();
-      for (key, cmd) in default_bindings.iter() {
-        user_bindings.entry(key.clone()).or_insert_with(|| cmd.clone());
-      }
+    let user_bindings = &mut cfg.keybindings;
+    for (key, cmd) in default_config.keybindings.iter() {
+      user_bindings.entry(key.clone()).or_insert_with(|| cmd.clone());
     }
+
     for (mode, default_styles) in default_config.styles.iter() {
       let user_styles = cfg.styles.entry(*mode).or_default();
       for (style_key, style) in default_styles.iter() {
@@ -83,23 +82,16 @@ impl Config {
 }
 
 #[derive(Clone, Debug, Default, Deref, DerefMut)]
-pub struct KeyBindings(pub HashMap<Mode, HashMap<Vec<KeyEvent>, AppAction>>);
+pub struct KeyBindings(pub HashMap<Vec<KeyEvent>, AppAction>);
 
 impl<'de> Deserialize<'de> for KeyBindings {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
     D: Deserializer<'de>,
   {
-    let parsed_map = HashMap::<Mode, HashMap<String, AppAction>>::deserialize(deserializer)?;
-
-    let keybindings = parsed_map
-      .into_iter()
-      .map(|(mode, inner_map)| {
-        let converted_inner_map =
-          inner_map.into_iter().map(|(key_str, cmd)| (parse_key_sequence(&key_str).unwrap(), cmd)).collect();
-        (mode, converted_inner_map)
-      })
-      .collect();
+    let parsed_map = HashMap::<String, AppAction>::deserialize(deserializer)?;
+    let keybindings =
+      parsed_map.into_iter().map(|(key_str, cmd)| (parse_key_sequence(&key_str).unwrap(), cmd)).collect();
 
     Ok(KeyBindings(keybindings))
   }

@@ -107,15 +107,13 @@ Example `config.json`:
 ```json
 {
   "keybindings": {
-    "Normal": {
-      "<Ctrl-d>": "Quit",
-      "<Ctrl-c>": "Quit",
-      "<Ctrl-z>": "Suspend",
-      "<Ctrl-r>": "Refresh",
-      "<Tab>": "Tab",
-      "<Backtab>": "BackTab",
-      "<Ctrl-o>": "ProcessReplace"
-    }
+    "<Ctrl-d>": "Quit",
+    "<Ctrl-c>": "Quit",
+    "<Ctrl-z>": "Suspend",
+    "<Ctrl-r>": "Refresh",
+    "<Tab>": "Tab",
+    "<Backtab>": "BackTab",
+    "<Ctrl-o>": "ProcessReplace"
   }
 }
 ```

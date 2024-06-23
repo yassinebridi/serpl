@@ -1,13 +1,11 @@
 {
   "keybindings": {
-    "Normal": {
-      "<Ctrl-d>": "Quit", // Another way to quit
-      "<Ctrl-c>": "Quit", // Yet another way to quit
-      "<Ctrl-z>": "Suspend", // Suspend the application
-      "<Ctrl-r>": "Refresh",
-      "<Tab>": "Tab",
-      "<Backtab>": "BackTab",
-      "<Ctrl-o>": "ProcessReplace",
-    },
+    "<Ctrl-d>": "Quit", // Another way to quit
+    "<Ctrl-c>": "Quit", // Yet another way to quit
+    "<Ctrl-z>": "Suspend", // Suspend the application
+    "<Ctrl-r>": "Refresh",
+    "<Tab>": "Tab",
+    "<Backtab>": "BackTab",
+    "<Ctrl-o>": "ProcessReplace",
   }
 }
