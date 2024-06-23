@@ -39,21 +39,21 @@ pub fn initialize_panic_handler() -> Result<()> {
       }
     }
 
-    // #[cfg(not(debug_assertions))]
-    // {
-    //   use human_panic::{handle_dump, print_msg, Metadata};
-    //   let meta = Metadata {
-    //     version: env!("CARGO_PKG_VERSION").into(),
-    //     name: env!("CARGO_PKG_NAME").into(),
-    //     authors: env!("CARGO_PKG_AUTHORS").replace(':', ", ").into(),
-    //     homepage: env!("CARGO_PKG_HOMEPAGE").into(),
-    //   };
-    //
-    //   let file_path = handle_dump(&meta, panic_info);
-    //   // prints human-panic message
-    //   print_msg(file_path, &meta).expect("human-panic: printing error message to console failed");
-    //   eprintln!("{}", panic_hook.panic_report(panic_info)); // prints color-eyre stack trace to stderr
-    // }
+    #[cfg(not(debug_assertions))]
+    {
+      use human_panic::{handle_dump, print_msg, Metadata};
+      let meta = Metadata {
+        version: env!("CARGO_PKG_VERSION").into(),
+        name: env!("CARGO_PKG_NAME").into(),
+        authors: env!("CARGO_PKG_AUTHORS").replace(':', ", ").into(),
+        homepage: env!("CARGO_PKG_HOMEPAGE").into(),
+      };
+
+      let file_path = handle_dump(&meta, panic_info);
+      // prints human-panic message
+      print_msg(file_path, &meta).expect("human-panic: printing error message to console failed");
+      eprintln!("{}", panic_hook.panic_report(panic_info)); // prints color-eyre stack trace to stderr
+    }
     let msg = format!("{}", panic_hook.panic_report(panic_info));
     log::error!("Error: {}", strip_ansi_escapes::strip_str(msg));
 
