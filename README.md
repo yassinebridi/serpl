@@ -56,7 +56,7 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
   ```
    
 ### Binaries
-Check the [releases](releases) page for the latest binaries.
+Check the [releases](https://github.com/yassinebridi/serpl/releases) page for the latest binaries.
 
 ### OS Specific Installation
 (WIP)
