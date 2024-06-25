@@ -38,6 +38,23 @@ impl SearchResult {
     Self::default()
   }
 
+  fn set_selected_result(&mut self, state: &State) {
+    if state.search_result.list.is_empty() {
+      return;
+    }
+
+    let selected_result = state.search_result.list.get(self.state.selected().unwrap()).unwrap();
+    let action = AppAction::Action(Action::SetSelectedResult {
+      result: SearchResultState {
+        index: selected_result.index,
+        path: selected_result.path.clone(),
+        matches: selected_result.matches.clone(),
+        total_matches: selected_result.total_matches,
+      },
+    });
+    self.command_tx.as_ref().unwrap().send(action).unwrap();
+  }
+
   fn next(&mut self, state: &State) {
     if state.search_result.list.is_empty() {
       return;
@@ -161,19 +178,19 @@ impl Component for SearchResult {
           self.delete_file(&state.selected_result);
           Ok(None)
         },
-        (KeyCode::Char('g'), _) => {
+        (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
           self.top(state);
           Ok(None)
         },
-        (KeyCode::Char('G'), _) => {
+        (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
           self.bottom(state);
           Ok(None)
         },
-        (KeyCode::Char('j'), _) => {
+        (KeyCode::Char('j') | KeyCode::Down, _) => {
           self.next(state);
           Ok(None)
         },
-        (KeyCode::Char('k'), _) => {
+        (KeyCode::Char('k') | KeyCode::Up, _) => {
           self.previous(state);
           Ok(None)
         },
@@ -217,9 +234,13 @@ impl Component for SearchResult {
       })
       .collect();
 
+    let internal_selected = state.selected_result.index.unwrap_or(0);
+    self.state.select(Some(internal_selected));
+    self.set_selected_result(state);
+
     let details_widget = List::new(list_items)
       .style(Style::default().fg(Color::White))
-      .highlight_style(Style::default().bg(Color::LightBlue))
+      .highlight_style(Style::default().bg(Color::Blue))
       .block(block);
     f.render_stateful_widget(details_widget, layout.search_details, &mut self.state);
     Ok(())

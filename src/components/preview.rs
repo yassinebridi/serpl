@@ -36,7 +36,17 @@ pub struct Preview {
 
 impl Preview {
   pub fn new() -> Self {
-    Self::default()
+    Self {
+      command_tx: None,
+      config: Config::default(),
+      lines_state: {
+        let mut state = ListState::default();
+        state.select(Some(0));
+        state
+      },
+      total_lines: 0,
+      non_divider_lines: vec![],
+    }
   }
 
   fn next(&mut self) {
@@ -101,20 +111,20 @@ impl Component for Preview {
           self.delete_line(&state.selected_result);
           Ok(None)
         },
-        (KeyCode::Char('g'), _) => {
+        (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
           self.top(state);
           Ok(None)
         },
-        (KeyCode::Char('G'), _) => {
+        (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
           self.bottom(state);
           Ok(None)
         },
 
-        (KeyCode::Char('j'), _) | (KeyCode::Down, _) => {
+        (KeyCode::Char('j') | KeyCode::Down, _) => {
           self.next();
           Ok(None)
         },
-        (KeyCode::Char('k'), _) | (KeyCode::Up, _) => {
+        (KeyCode::Char('k') | KeyCode::Up, _) => {
           self.previous();
           Ok(None)
         },
@@ -128,6 +138,14 @@ impl Component for Preview {
     } else {
       Ok(None)
     }
+  }
+
+  fn update(&mut self, action: AppAction) -> Result<Option<AppAction>> {
+    if let AppAction::Action(Action::SetSelectedResult { result }) = action {
+      self.lines_state.select(Some(0));
+    }
+
+    Ok(None)
   }
 
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
@@ -171,7 +189,8 @@ impl Component for Preview {
           ReplaceTextKind::Simple => replace_text.to_string(),
         };
 
-        spans.push(Span::styled(matched_text, Style::default().fg(Color::Red).add_modifier(Modifier::CROSSED_OUT)));
+        spans
+          .push(Span::styled(matched_text, Style::default().fg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
         spans.push(Span::styled(replaced_text, Style::default().fg(Color::White).bg(Color::Green)));
         last_end = mat.end;
       }
@@ -215,7 +234,7 @@ impl Component for Preview {
     let text = Text::from(lines);
 
     let preview_widget =
-      List::new(text).highlight_style(Style::default().bg(Color::LightBlue)).block(block).scroll_padding(4);
+      List::new(text).highlight_style(Style::default().bg(Color::Blue)).block(block).scroll_padding(4);
 
     f.render_stateful_widget(preview_widget, layout.preview, &mut self.lines_state);
 

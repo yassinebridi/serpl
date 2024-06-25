@@ -44,19 +44,30 @@ impl Search {
     Self::default()
   }
 
-  fn handle_input(&mut self, key: KeyEvent) {
+  fn set_selected_result(&mut self, state: &State) {
+    let first_result = match state.search_result.list.first() {
+      Some(result) => result.clone(),
+      None => SearchResultState::default(),
+    };
+    let selected_result = AppAction::Action(Action::SetSelectedResult { result: first_result.clone() });
+    self.command_tx.as_ref().unwrap().send(selected_result).unwrap();
+  }
+
+  fn handle_input(&mut self, key: KeyEvent, state: &State) {
     let query = self.input.value();
     let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
     self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
     self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
+    self.set_selected_result(state);
   }
 
-  fn change_kind(&mut self, search_text_kind: SearchTextKind) {
+  fn change_kind(&mut self, search_text_kind: SearchTextKind, state: &State) {
     let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: search_text_kind });
     self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
     self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
+    self.set_selected_result(state);
   }
 }
 
@@ -70,7 +81,7 @@ impl Component for Search {
     if state.focused_screen == FocusedScreen::SearchInput {
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) => Ok(None),
-        (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
+        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let search_text_kind = match state.search_text.kind {
             SearchTextKind::Simple => SearchTextKind::MatchCase,
             SearchTextKind::MatchCase => SearchTextKind::MatchWholeWord,
@@ -78,34 +89,39 @@ impl Component for Search {
             SearchTextKind::MatchCaseWholeWord => SearchTextKind::Regex,
             SearchTextKind::Regex => SearchTextKind::Simple,
           };
-          self.change_kind(search_text_kind);
-          Ok(None)
-        },
-        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-          let search_text_kind = match state.search_text.kind {
-            SearchTextKind::Simple => SearchTextKind::Regex,
-            SearchTextKind::MatchCase => SearchTextKind::Simple,
-            SearchTextKind::MatchWholeWord => SearchTextKind::MatchCase,
-            SearchTextKind::MatchCaseWholeWord => SearchTextKind::MatchWholeWord,
-            SearchTextKind::Regex => SearchTextKind::MatchCaseWholeWord,
-          };
-          self.change_kind(search_text_kind);
+          self.change_kind(search_text_kind, state);
           Ok(None)
         },
         (KeyCode::Enter, _) => {
-          self.handle_input(key);
+          self.handle_input(key, state);
           Ok(None)
         },
-        _ => {
+        (KeyCode::Char(_c), _) => {
           self.input.handle_event(&crossterm::event::Event::Key(key));
           let is_git_folder = is_git_repo(state.project_root.clone());
           if is_git_folder {
             let key_bindings = self.config.keybindings.clone();
             let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
             if !is_quit_key(&quit_keys, &key) {
-              self.handle_input(key);
+              self.handle_input(key, state);
             }
           }
+          Ok(None)
+        },
+        (KeyCode::Backspace | KeyCode::Delete, _) => {
+          self.input.handle_event(&crossterm::event::Event::Key(key));
+          let is_git_folder = is_git_repo(state.project_root.clone());
+          if is_git_folder {
+            let key_bindings = self.config.keybindings.clone();
+            let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
+            if !is_quit_key(&quit_keys, &key) {
+              self.handle_input(key, state);
+            }
+          }
+          Ok(None)
+        },
+        _ => {
+          self.input.handle_event(&crossterm::event::Event::Key(key));
           Ok(None)
         },
       }
