@@ -206,10 +206,10 @@ impl App {
             let action_tx_arc = Arc::new(action_tx.clone());
             let thunk = thunk_impl(action, action_tx_arc);
 
-            // store.dispatch(thunk::ActionOrThunk::Thunk(thunk_impl(action, &action_tx))).await;
             store.dispatch(thunk::ActionOrThunk::Thunk(thunk)).await;
           },
           AppAction::Tui(action) => {
+            log::debug!("Tui action: {action:?}");
             action_tx.send(AppAction::Tui(action.clone()))?;
           },
         }

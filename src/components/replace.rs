@@ -60,13 +60,6 @@ impl Component for Replace {
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::ReplaceInput {
       match (key.code, key.modifiers) {
-        (KeyCode::Char('p'), KeyModifiers::CONTROL) => {
-          let replace_text_kind = match state.replace_text.kind {
-            ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
-            ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
-          };
-          Ok(None)
-        },
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,

@@ -81,7 +81,7 @@ impl Component for ConfirmEmptyReplaceDialog {
           self.dialog_state.loop_selected_button();
           Ok(None)
         },
-        KeyCode::Enter => {
+        KeyCode::Enter | KeyCode::Char('y') => {
           if let Some(action) = &dialog.on_confirm {
             match self.dialog_state.selected_button {
               ConfirmDialogAction::Confirm => {
@@ -97,7 +97,7 @@ impl Component for ConfirmEmptyReplaceDialog {
             Ok(None)
           }
         },
-        KeyCode::Esc => {
+        KeyCode::Esc | KeyCode::Char('n') => {
           if let Some(action) = &dialog.on_cancel {
             self.handle_input(action.clone(), state);
             Ok(None)
