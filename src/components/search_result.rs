@@ -210,7 +210,7 @@ impl Component for SearchResult {
     let layout = get_layout(area);
 
     let block =
-      Block::bordered().border_type(BorderType::Rounded).title(Title::from("Details").alignment(Alignment::Left));
+      Block::bordered().border_type(BorderType::Rounded).title(Title::from("Result List").alignment(Alignment::Left));
     let block = if state.active_tab == Tab::SearchResult {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {

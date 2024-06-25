@@ -16,11 +16,11 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
    - [Basic Commands](#basic-commands)
    - [Key Bindings](#key-bindings)
    - [Configuration](#configuration)
-4. [Screens](#screens)
-   - [Search Screen](#search-screen)
-   - [Replace Screen](#replace-screen)
-   - [Search Results Screen](#search-results-screen)
-   - [Preview Screen](#preview-screen)
+4. [Panes](#spanes)
+   - [Search Input](#search-input)
+   - [Replace Input](#replace-input)
+   - [Search Results Pane](#search-results-pane)
+   - [Preview Pane](#preview-pane)
 5. [Neovim Integration using toggleterm](#neovim-integration-using-toggleterm)
 6. [License](#license)
 7. [Contributing](#contributing)
@@ -94,15 +94,15 @@ Default key bindings can be customized through the `config.json` file.
 | `Backtab`                    | Switch to previous tabs           |
 | `Ctrl + o`                   | Process replace                   |
 | `Ctrl + n`                   | Toggle search mode                |
-| `Ctrl + p`                   | Toggle replace mode               |
-| `Enter`                      | Execute search                    |
-| `g`                          | Go to top of the list             |
-| `G`                          | Go to bottom of the list          |
+| `Enter`                      | Execute search (for non-git repos)|
+| `g` / `Left` / `h`           | Go to top of the list             |
+| `G` / `Right` / `l`          | Go to bottom of the list          |
 | `j` / `Down`                 | Move to the next item             |
 | `k` / `Up`                   | Move to the previous item         |
 | `d`                          | Delete selected file or line      |
-| `Esc`                        | Exit the current screen or dialog |
-| `Enter` (in dialogs)         | Confirm action                    |
+| `Esc`                        | Exit the current pane or dialog   |
+| `Enter` (in dialogs) / `y`   | Confirm action                    |
+| `Esc` (in dialogs) / `n`     | Cancel action                     |
 | `h`, `l`, `Tab` (in dialogs) | Navigate dialog options           |
 
 ### Configuration
@@ -180,25 +180,25 @@ keybindings:
 
 You can customize the key bindings by modifying the configuration file in the format of your choice.
 
-## Screens
+## Panes
 
-### Search Screen
+### Search Input
 
 - Input field for entering search keywords.
 - Toggle search modes (Simple, Match Case, Whole Word, Regex).
 
-### Replace Screen
+### Replace Input
 
 - Input field for entering replacement text.
 - Toggle replace modes (Simple, Preserve Case).
 
-### Search Results Screen
+### Search Results Pane
 
 - List of files with search results.
 - Navigation to select and view files.
 - Option to delete files from the search results.
 
-### Preview Screen
+### Preview Pane
 
 - Display of the selected file with highlighted search results.
 - Navigation to view different matches within the file.
