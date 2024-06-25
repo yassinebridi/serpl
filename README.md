@@ -59,7 +59,14 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
 Check the [releases](https://github.com/yassinebridi/serpl/releases) page for the latest binaries.
 
 ### OS Specific Installation
-(WIP)
+
+#### Arch Linux
+
+`serpl` can be installed from the [official repositories](https://archlinux.org/packages/extra/x86_64/serpl/) using [`pacman`](https://wiki.archlinux.org/title/Pacman):
+
+```bash
+pacman -S serpl
+```
 
 ## Usage
 
