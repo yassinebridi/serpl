@@ -189,9 +189,14 @@ impl Component for Preview {
           ReplaceTextKind::Simple => replace_text.to_string(),
         };
 
-        spans
-          .push(Span::styled(matched_text, Style::default().fg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
-        spans.push(Span::styled(replaced_text, Style::default().fg(Color::White).bg(Color::Green)));
+        if replaced_text.len() > 0 {
+          spans
+            .push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
+          spans.push(Span::styled(replaced_text, Style::default().fg(Color::White).bg(Color::Green)));
+        } else {
+          spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue).add_modifier(Modifier::BOLD)));
+        }
+
         last_end = mat.end;
       }
 
@@ -212,7 +217,6 @@ impl Component for Preview {
       if let Some(last) = last_match {
         if line_number > last + 1 {
           let divider_line = Line::from("-".repeat(area.width as usize)).fg(Color::DarkGray);
-          lines.push(divider_line.clone());
           lines.push(divider_line);
         }
       }
@@ -234,7 +238,7 @@ impl Component for Preview {
     let text = Text::from(lines);
 
     let preview_widget =
-      List::new(text).highlight_style(Style::default().bg(Color::Blue)).block(block).scroll_padding(4);
+      List::new(text).highlight_style(Style::default().add_modifier(Modifier::BOLD)).block(block).scroll_padding(4);
 
     f.render_stateful_widget(preview_widget, layout.preview, &mut self.lines_state);
 
