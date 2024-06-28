@@ -189,12 +189,12 @@ impl Component for Preview {
           ReplaceTextKind::Simple => replace_text.to_string(),
         };
 
-        if replaced_text.len() > 0 {
+        if replaced_text.is_empty() {
+          spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue).add_modifier(Modifier::BOLD)));
+        } else {
           spans
             .push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
           spans.push(Span::styled(replaced_text, Style::default().fg(Color::White).bg(Color::Green)));
-        } else {
-          spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue).add_modifier(Modifier::BOLD)));
         }
 
         last_end = mat.end;
