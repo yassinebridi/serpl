@@ -61,6 +61,7 @@ impl Component for SmallHelp {
       FocusedScreen::Preview => "Back to list: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete line: <d>",
       FocusedScreen::ConfirmReplaceDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
       FocusedScreen::ConfirmGitDirectoryDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
+      FocusedScreen::HelpDialog => "Close Help: <Esc> | Select: <Enter>",
     };
 
     let small_help = SmallHelpWidget::new(content.to_string(), Color::Blue, Alignment::Left);

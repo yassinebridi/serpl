@@ -14,16 +14,7 @@ use tokio::sync::mpsc;
 use crate::{
   action::{AppAction, TuiAction},
   components::{
-    confirm_empty_replace_dialog::ConfirmEmptyReplaceDialog,
-    confirm_git_dir_dialog::ConfirmGitDirDialog,
-    notifications::{NotificationEnum, Notifications},
-    preview::Preview,
-    replace::Replace,
-    search::Search,
-    search_result::SearchResult,
-    small_help::SmallHelp,
-    status::Status,
-    Component,
+    confirm_empty_replace_dialog::ConfirmEmptyReplaceDialog, confirm_git_dir_dialog::ConfirmGitDirDialog, help_dialog::HelpDialog, notifications::{NotificationEnum, Notifications}, preview::Preview, replace::Replace, search::Search, search_result::SearchResult, small_help::SmallHelp, status::Status, Component
   },
   config::Config,
   mode::Mode,
@@ -62,6 +53,7 @@ impl App {
     let small_help = SmallHelp::default();
     let confirm_git_dir_dialog = ConfirmGitDirDialog::default();
     let confirm_empty_replace_dialog = ConfirmEmptyReplaceDialog::default();
+    let help_dialog = HelpDialog::default();
     let status = Status::default();
     Ok(Self {
       tick_rate: 4.0,
@@ -76,6 +68,7 @@ impl App {
         Box::new(status),
         Box::new(confirm_git_dir_dialog),
         Box::new(confirm_empty_replace_dialog),
+        Box::new(help_dialog),
       ],
       should_quit: false,
       should_suspend: false,

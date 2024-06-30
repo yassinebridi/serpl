@@ -22,6 +22,7 @@ pub struct State {
   pub dialog: Option<Dialog>,
   pub project_root: PathBuf,
   pub focused_screen: FocusedScreen,
+  pub help_dialog_visible: bool,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -33,6 +34,7 @@ pub enum FocusedScreen {
   Preview,
   ConfirmGitDirectoryDialog,
   ConfirmReplaceDialog,
+  HelpDialog,
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -66,12 +68,18 @@ pub enum ReplaceTextKind {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Dialog {
-  ConfirmGitDirectory(ConfirmDialog),
-  ConfirmReplace(ConfirmDialog),
+  ConfirmGitDirectory(ConfirmDialogState),
+  ConfirmReplace(ConfirmDialogState),
+  HelpDialog(HelpDialogState),
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct ConfirmDialog {
+pub struct HelpDialogState {
+  pub show: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ConfirmDialogState {
   pub message: String,
   pub on_confirm: Option<DialogAction>,
   pub on_cancel: Option<DialogAction>,

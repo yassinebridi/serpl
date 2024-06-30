@@ -12,6 +12,7 @@ use crate::{
   mode::Mode,
   redux::{
     action::Action,
+    state::{Dialog, HelpDialogState},
     thunk::{self, ForceReplace, ThunkAction},
     ActionOrThunk,
   },
@@ -101,6 +102,11 @@ impl<'de> Deserialize<'de> for AppAction {
           "SearchResultTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult })),
           "InputMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Input })),
           "NormalMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Normal })),
+          "ShowHelp" => {
+            Ok(AppAction::Action(Action::SetDialog {
+              dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),
+            }))
+          },
           // Redux Thunk Actions
           "ProcessReplace" => Ok(AppAction::Thunk(ThunkAction::ProcessReplace(ForceReplace(false)))),
           _ => Err(E::custom(format!("Unknown Action variant: {}", value))),
