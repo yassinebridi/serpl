@@ -68,6 +68,32 @@ Check the [releases](https://github.com/yassinebridi/serpl/releases) page for th
 pacman -S serpl
 ```
 
+#### Nix/NixOS
+
+`serpl` is included in [nixpkgs](https://github.com/nixos/nixpkgs) since 24.11, and can be installed via Nix in different ways:
+
+**On standalone Nix setups**:
+
+```bash
+nix profile install nixpkgs#serpl
+```
+
+**On NixOS** (via `configuration.nix` or similar):
+
+```nix
+{pkgs, ...}: {
+  environment.systemPackages = [pkgs.serpl];
+}
+```
+
+**On Home-Manager**:
+
+```nix
+{pkgs, ...}: {
+  home.packages = [pkgs.serpl];
+}
+```
+
 ## Usage
 
 ### Basic Commands
