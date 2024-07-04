@@ -12,7 +12,7 @@ use ratatui::{
   widgets::{block::Title, *},
 };
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 use tracing::{event, trace, Level};
 use tui_input::{backend::crossterm::EventHandler, Input};
 
@@ -32,11 +32,14 @@ use crate::{
   utils::is_git_repo,
 };
 
+const DEBOUNCE_DURATION: Duration = Duration::from_millis(300);
+
 #[derive(Default)]
 pub struct Search {
   command_tx: Option<UnboundedSender<AppAction>>,
   config: Config,
   input: Input,
+  debounce_timer: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl Search {
@@ -55,11 +58,20 @@ impl Search {
 
   fn handle_input(&mut self, key: KeyEvent, state: &State) {
     let query = self.input.value();
+
+    if let Some(timer) = self.debounce_timer.take() {
+      timer.abort();
+    }
+
+    let tx = self.command_tx.clone().unwrap();
     let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
-    self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
-    self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
-    self.set_selected_result(state);
+
+    self.debounce_timer = Some(tokio::spawn(async move {
+      tokio::time::sleep(DEBOUNCE_DURATION).await;
+      tx.send(search_text_action).unwrap();
+      tx.send(process_search_thunk).unwrap();
+    }));
   }
 
   fn change_kind(&mut self, search_text_kind: SearchTextKind, state: &State) {
