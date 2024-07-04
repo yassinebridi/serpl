@@ -16,7 +16,7 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
    - [Basic Commands](#basic-commands)
    - [Key Bindings](#key-bindings)
    - [Configuration](#configuration)
-4. [Panes](#spanes)
+4. [Panes](#panes)
    - [Search Input](#search-input)
    - [Replace Input](#replace-input)
    - [Search Results Pane](#search-results-pane)
@@ -24,6 +24,8 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
 5. [Neovim Integration using toggleterm](#neovim-integration-using-toggleterm)
 6. [License](#license)
 7. [Contributing](#contributing)
+8. [Acknowledgements](#acknowledgements)
+9. [Similar Projects](#similar-projects)
 
 ## Features
 
@@ -212,6 +214,9 @@ You can customize the key bindings by modifying the configuration file in the fo
 
 - Input field for entering search keywords.
 - Toggle search modes (Simple, Match Case, Whole Word, Regex).
+ 
+> [!TIP] 
+> If current directory is considerebly large, you have to click `Enter` to start the search.
 
 ### Replace Input
 
@@ -303,3 +308,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contributing
 (WIP)
+
+## Acknowledgements
+- This project was inspired by the [VS Code](https://code.visualstudio.com/) search and replace functionality.
+- This project is built using the awesome [ratatui.rs](https://ratatui.rs) library, and build on top of their [Component Template](https://ratatui.rs/templates/component).
+
+## Similar Projects
+- [repgrep](https://github.com/acheronfail/repgrep): An interactive replacer for ripgrep that makes it easy to find and replace across files on the command line.
