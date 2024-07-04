@@ -134,10 +134,6 @@ pub struct SubMatch {
 
 impl State {
   pub fn new(project_root: PathBuf) -> Self {
-    Self {
-      project_root,
-      is_large_folder: false,
-      ..Default::default()
-    }
+    Self { project_root, is_large_folder: false, ..Default::default() }
   }
 }
