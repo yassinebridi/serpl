@@ -29,7 +29,6 @@ use crate::{
   },
   ripgrep::RipgrepOutput,
   tabs::Tab,
-  utils::is_git_repo,
 };
 
 const DEBOUNCE_DURATION: Duration = Duration::from_millis(300);
@@ -67,11 +66,15 @@ impl Search {
     let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
 
-    self.debounce_timer = Some(tokio::spawn(async move {
-      tokio::time::sleep(DEBOUNCE_DURATION).await;
+    if state.is_large_folder && key.code != KeyCode::Enter {
       tx.send(search_text_action).unwrap();
-      tx.send(process_search_thunk).unwrap();
-    }));
+    } else if !state.is_large_folder || key.code == KeyCode::Enter {
+      self.debounce_timer = Some(tokio::spawn(async move {
+        tokio::time::sleep(DEBOUNCE_DURATION).await;
+        tx.send(search_text_action).unwrap();
+        tx.send(process_search_thunk).unwrap();
+      }));
+    }
   }
 
   fn change_kind(&mut self, search_text_kind: SearchTextKind, state: &State) {
@@ -110,25 +113,19 @@ impl Component for Search {
         },
         (KeyCode::Char(_c), _) => {
           self.input.handle_event(&crossterm::event::Event::Key(key));
-          let is_git_folder = is_git_repo(state.project_root.clone());
-          if is_git_folder {
-            let key_bindings = self.config.keybindings.clone();
-            let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
-            if !is_quit_key(&quit_keys, &key) {
-              self.handle_input(key, state);
-            }
+          let key_bindings = self.config.keybindings.clone();
+          let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
+          if !is_quit_key(&quit_keys, &key) {
+            self.handle_input(key, state);
           }
           Ok(None)
         },
         (KeyCode::Backspace | KeyCode::Delete, _) => {
           self.input.handle_event(&crossterm::event::Event::Key(key));
-          let is_git_folder = is_git_repo(state.project_root.clone());
-          if is_git_folder {
-            let key_bindings = self.config.keybindings.clone();
-            let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
-            if !is_quit_key(&quit_keys, &key) {
-              self.handle_input(key, state);
-            }
+          let key_bindings = self.config.keybindings.clone();
+          let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
+          if !is_quit_key(&quit_keys, &key) {
+            self.handle_input(key, state);
           }
           Ok(None)
         },
