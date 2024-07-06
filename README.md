@@ -118,11 +118,12 @@ Default key bindings can be customized through the `config.json` file.
 | Key Combination              | Action                            |
 | ---------------------------- | --------------------------------- |
 | `Ctrl + c`                   | Quit                              |
+| `Ctrl + u`                   | Help                              |
 | `Tab`                        | Switch between tabs               |
 | `Backtab`                    | Switch to previous tabs           |
 | `Ctrl + o`                   | Process replace                   |
 | `Ctrl + n`                   | Toggle search and replace modes   |
-| `Enter`                      | Execute search (for non-git repos)|
+| `Enter`                      | Execute search (for large folders)|
 | `g` / `Left` / `h`           | Go to top of the list             |
 | `G` / `Right` / `l`          | Go to bottom of the list          |
 | `j` / `Down`                 | Move to the next item             |

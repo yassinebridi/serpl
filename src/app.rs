@@ -60,7 +60,7 @@ impl App {
     let small_help = SmallHelp::default();
     let confirm_git_dir_dialog = ConfirmGitDirDialog::default();
     let confirm_empty_replace_dialog = ConfirmEmptyReplaceDialog::default();
-    let help_dialog = HelpDialog::default();
+    let help_dialog = HelpDialog::new(config.clone());
     let status = Status::default();
     Ok(Self {
       tick_rate: 4.0,
