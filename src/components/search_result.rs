@@ -30,7 +30,7 @@ pub struct SearchResult {
   command_tx: Option<UnboundedSender<AppAction>>,
   config: Config,
   state: ListState,
-  match_counts: Vec<String>, // Store the string representations of match counts
+  match_counts: Vec<String>,
 }
 
 impl SearchResult {
@@ -38,21 +38,25 @@ impl SearchResult {
     Self::default()
   }
 
-  fn set_selected_result(&mut self, state: &State) {
-    if state.search_result.list.is_empty() {
-      return;
-    }
+  fn delete_file(&mut self, state: &State) {
+    if let Some(selected_index) = self.state.selected() {
+      if selected_index < state.search_result.list.len() {
+        let remove_file_from_list_thunk = AppAction::Thunk(ThunkAction::RemoveFileFromList(selected_index));
+        self.command_tx.as_ref().unwrap().send(remove_file_from_list_thunk).unwrap();
 
-    let selected_result = state.search_result.list.get(self.state.selected().unwrap()).unwrap();
-    let action = AppAction::Action(Action::SetSelectedResult {
-      result: SearchResultState {
-        index: selected_result.index,
-        path: selected_result.path.clone(),
-        matches: selected_result.matches.clone(),
-        total_matches: selected_result.total_matches,
-      },
-    });
-    self.command_tx.as_ref().unwrap().send(action).unwrap();
+        if state.search_result.list.len() > 1 {
+          if selected_index >= state.search_result.list.len() - 1 {
+            self.state.select(Some(state.search_result.list.len() - 2));
+          } else {
+            self.state.select(Some(selected_index));
+          }
+        } else {
+          self.state.select(None);
+        }
+
+        self.update_selected_result(state);
+      }
+    }
   }
 
   fn next(&mut self, state: &State) {
@@ -60,7 +64,7 @@ impl SearchResult {
       return;
     }
 
-    let i = match self.state.selected() {
+    let new_index = match self.state.selected() {
       Some(i) => {
         if i >= state.search_result.list.len() - 1 {
           0
@@ -70,21 +74,16 @@ impl SearchResult {
       },
       None => 0,
     };
-    self.state.select(Some(i));
-    let selected_result = state.search_result.list.get(i).unwrap();
-    let action = AppAction::Action(Action::SetSelectedResult {
-      result: SearchResultState {
-        index: selected_result.index,
-        path: selected_result.path.clone(),
-        matches: selected_result.matches.clone(),
-        total_matches: selected_result.total_matches,
-      },
-    });
-    self.command_tx.as_ref().unwrap().send(action).unwrap();
+    self.state.select(Some(new_index));
+    self.update_selected_result(state);
   }
 
   fn previous(&mut self, state: &State) {
-    let i = match self.state.selected() {
+    if state.search_result.list.is_empty() {
+      return;
+    }
+
+    let new_index = match self.state.selected() {
       Some(i) => {
         if i == 0 {
           state.search_result.list.len() - 1
@@ -92,19 +91,50 @@ impl SearchResult {
           i - 1
         }
       },
-      None => 0,
+      None => state.search_result.list.len() - 1,
     };
-    self.state.select(Some(i));
-    let selected_result = state.search_result.list.get(i).unwrap();
-    let action = AppAction::Action(Action::SetSelectedResult {
-      result: SearchResultState {
-        index: selected_result.index,
-        path: selected_result.path.clone(),
-        matches: selected_result.matches.clone(),
-        total_matches: selected_result.total_matches,
-      },
-    });
-    self.command_tx.as_ref().unwrap().send(action).unwrap();
+    self.state.select(Some(new_index));
+    self.update_selected_result(state);
+  }
+
+  fn update_selected_result(&mut self, state: &State) {
+    if let Some(selected_index) = self.state.selected() {
+      if let Some(selected_result) = state.search_result.list.get(selected_index) {
+        let action = AppAction::Action(Action::SetSelectedResult {
+          result: SearchResultState {
+            index: Some(selected_index),
+            path: selected_result.path.clone(),
+            matches: selected_result.matches.clone(),
+            total_matches: selected_result.total_matches,
+          },
+        });
+        self.command_tx.as_ref().unwrap().send(action).unwrap();
+      } else {
+        let action = AppAction::Action(Action::SetSelectedResult { result: SearchResultState::default() });
+        self.command_tx.as_ref().unwrap().send(action).unwrap();
+        self.state.select(None);
+      }
+    } else {
+      let action = AppAction::Action(Action::SetSelectedResult { result: SearchResultState::default() });
+      self.command_tx.as_ref().unwrap().send(action).unwrap();
+    }
+  }
+
+  fn set_selected_result(&mut self, state: &State) {
+    if state.search_result.list.is_empty() {
+      self.state.select(None);
+      return;
+    }
+
+    if let Some(selected_index) = self.state.selected() {
+      if selected_index >= state.search_result.list.len() {
+        self.state.select(Some(state.search_result.list.len() - 1));
+      }
+    } else {
+      self.state.select(Some(0));
+    }
+
+    self.update_selected_result(state);
   }
 
   fn top(&mut self, state: &State) {
@@ -150,14 +180,6 @@ impl SearchResult {
     self.match_counts.push(total_matches_str);
     self.match_counts.last().unwrap()
   }
-
-  fn delete_file(&mut self, selected_result_state: &SearchResultState) {
-    if let Some(selected_index) = selected_result_state.index {
-      let remove_file_from_list_thunk = AppAction::Thunk(ThunkAction::RemoveFileFromList(selected_index));
-      self.command_tx.as_ref().unwrap().send(remove_file_from_list_thunk).unwrap();
-      self.state.select(Some(selected_index));
-    }
-  }
 }
 
 impl Component for SearchResult {
@@ -175,7 +197,7 @@ impl Component for SearchResult {
     if state.focused_screen == FocusedScreen::SearchResultList {
       match (key.code, key.modifiers) {
         (KeyCode::Char('d'), _) => {
-          self.delete_file(&state.selected_result);
+          self.delete_file(state);
           Ok(None)
         },
         (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
