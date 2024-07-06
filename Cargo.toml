@@ -1,6 +1,6 @@
 [package]
 name = "serpl"
-version = "0.1.28"
+version = "0.1.32"
 edition = "2021"
 description = "A simple terminal UI for search and replace, ala VS Code"
 repository = "https://github.com/yassinebridi/serpl"

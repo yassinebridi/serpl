@@ -1,4 +1,9 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+  fs,
+  path::{Path, PathBuf},
+  process::Command,
+  sync::Arc,
+};
 
 use color_eyre::eyre::Result;
 use crossterm::event::KeyEvent;
@@ -27,6 +32,8 @@ use crate::{
   tabs::Tab,
   tui,
 };
+
+const FILE_COUNT_THRESHOLD: usize = 1000;
 
 pub struct App {
   pub config: Config,
@@ -79,10 +86,32 @@ impl App {
     })
   }
 
+  fn is_large_folder(path: &Path) -> bool {
+    let output =
+      Command::new("rg").args(["--files", "--count-matches", "--max-count", "1", path.to_str().unwrap_or("")]).output();
+
+    match output {
+      Ok(output) => {
+        if output.status.success() {
+          let file_count = String::from_utf8_lossy(&output.stdout).lines().count();
+          log::info!("File count: {}", file_count);
+          file_count > FILE_COUNT_THRESHOLD
+        } else {
+          log::error!("ripgrep command failed: {}", String::from_utf8_lossy(&output.stderr));
+          false
+        }
+      },
+      Err(e) => {
+        log::error!("Failed to execute ripgrep: {}", e);
+        false
+      },
+    }
+  }
+
   pub async fn run(&mut self) -> Result<()> {
     log::info!("Starting app..");
     let initial_state = State::new(self.project_root.clone());
-    let store = Store::new_with_state(reducer, initial_state).wrap(ThunkMiddleware).await;
+    let mut state = initial_state.clone();
 
     let (action_tx, mut action_rx) = mpsc::unbounded_channel();
     let (redux_action_tx, mut redux_action_rx) = mpsc::unbounded_channel::<AppAction>();
@@ -92,15 +121,26 @@ impl App {
     tui.enter()?;
 
     for component in self.components.iter_mut() {
+      component.init(tui.size()?)?;
+    }
+
+    // handle big folders
+    let is_large_folder = Self::is_large_folder(&self.project_root);
+    state.is_large_folder = is_large_folder;
+    let store = Store::new_with_state(reducer, state).wrap(ThunkMiddleware).await;
+    if is_large_folder {
+      let search_text_action = AppAction::Tui(TuiAction::Notify(NotificationEnum::Info(
+        "This is a large folder. click 'Enter' to search".to_string(),
+      )));
+      action_tx.send(search_text_action)?;
+    }
+
+    for component in self.components.iter_mut() {
       component.register_action_handler(redux_action_tx.clone())?;
     }
 
     for component in self.components.iter_mut() {
       component.register_config_handler(self.config.clone())?;
-    }
-
-    for component in self.components.iter_mut() {
-      component.init(tui.size()?)?;
     }
 
     loop {
@@ -144,7 +184,6 @@ impl App {
 
       let mut rendered = false;
       while let Ok(action) = action_rx.try_recv() {
-        // if action != TuiAction::Tick && action != TuiAction::Render {
         if action != AppAction::Tui(TuiAction::Tick) && action != AppAction::Tui(TuiAction::Render) {
           log::debug!("{action:?}");
         }

@@ -23,6 +23,7 @@ pub struct State {
   pub project_root: PathBuf,
   pub focused_screen: FocusedScreen,
   pub help_dialog_visible: bool,
+  pub is_large_folder: bool,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -141,6 +142,6 @@ pub struct SubMatch {
 
 impl State {
   pub fn new(project_root: PathBuf) -> Self {
-    Self { project_root, ..Default::default() }
+    Self { project_root, is_large_folder: false, ..Default::default() }
   }
 }
