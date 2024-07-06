@@ -11,7 +11,7 @@ use crate::{
   config::{key_event_to_string, Config, KeyBindings},
   redux::{
     action::Action,
-    state::{Dialog, State},
+    state::{Dialog, FocusedScreen, HelpDialogState, State},
   },
   ui::help_display_dialog::{HelpDisplayDialogState, HelpDisplayDialogWidget, Tab},
 };
@@ -26,13 +26,12 @@ pub struct HelpDialog {
 }
 
 impl HelpDialog {
-  pub fn new(config: Config) -> Self {
-    let tabs =
-      vec![Tab { title: "[1] Global".to_string(), content: Self::global_keybindings(&config.keybindings) }, Tab {
-        title: "[2] Navigation".to_string(),
-        content: Self::navigation_keybindings(),
-      }];
-    Self { config, tabs, active_tab: 0, ..Default::default() }
+  pub fn new() -> Self {
+    let tabs = vec![Tab { title: "[1] Global".to_string(), content: Self::global_keybindings() }, Tab {
+      title: "[2] Navigation".to_string(),
+      content: Self::navigation_keybindings(),
+    }];
+    Self { tabs, active_tab: 0, ..Default::default() }
   }
 
   // fn global_keybindings(keybindings: &KeyBindings) -> String {
@@ -47,8 +46,8 @@ impl HelpDialog {
   //   content
   // }
 
-  fn global_keybindings(keybindings: &KeyBindings) -> String {
-    "- q: Quit\n- Ctrl-c: Quit\n- Ctrl-u: Help dialog\n- Cltr-o: Process Replace\n- Ctrl-n: Loop through search and replace modes\n- Enter: Select/Deselect file\n- d: delete file/delete line from the replace process".to_string()
+  fn global_keybindings() -> String {
+    "- q: Quit\n- Ctrl-c: Quit\n- Ctrl-b: Help dialog\n- Cltr-o: Process Replace\n- Ctrl-n: Loop through search and replace modes\n- Enter: Select/Deselect file\n- d: delete file/delete line from the replace process".to_string()
   }
 
   fn navigation_keybindings() -> String {
@@ -63,12 +62,17 @@ impl Component for HelpDialog {
   }
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
-    if let Some(Dialog::HelpDialog(_)) = &state.dialog {
+    if state.focused_screen == FocusedScreen::HelpDialog {
       match (key.code, key.modifiers) {
         (KeyCode::Esc, KeyModifiers::NONE) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
-          let hide_dialog = AppAction::Action(Action::SetDialog { dialog: None });
-          self.command_tx.as_ref().unwrap().send(hide_dialog)?;
+          log::info!("Drawing HelpDialog 11{:?}", state.focused_screen);
           self.help_dialog_state.show = false;
+          let previous_focused_screen = state.previous_focused_screen.clone();
+          let hide_dialog = AppAction::Action(Action::SetDialog { dialog: None });
+          self.command_tx.as_ref().unwrap().send(hide_dialog).unwrap();
+          let focus_screen = AppAction::Action(Action::SetFocusedScreen { screen: Some(previous_focused_screen) });
+          self.command_tx.as_ref().unwrap().send(focus_screen).unwrap();
+          log::info!("Drawing HelpDialog 22{:?}", state.focused_screen);
           Ok(None)
         },
         (KeyCode::Left, KeyModifiers::NONE)
@@ -103,7 +107,7 @@ impl Component for HelpDialog {
   }
 
   fn draw(&mut self, f: &mut Frame<'_>, rect: Rect, state: &State) -> Result<()> {
-    if let Some(Dialog::HelpDialog(_)) = &state.dialog {
+    if let Some(Dialog::HelpDialog(HelpDialogState { show: true })) = &state.dialog {
       let dialog_widget = HelpDisplayDialogWidget::new(self.tabs.clone(), self.active_tab);
       f.render_stateful_widget(dialog_widget, rect, &mut self.help_dialog_state);
     }

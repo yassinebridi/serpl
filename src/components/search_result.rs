@@ -211,7 +211,7 @@ impl Component for SearchResult {
 
     let block =
       Block::bordered().border_type(BorderType::Rounded).title(Title::from("Result List").alignment(Alignment::Left));
-    let block = if state.active_tab == Tab::SearchResult {
+    let block = if state.focused_screen == FocusedScreen::SearchResultList {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {
       block

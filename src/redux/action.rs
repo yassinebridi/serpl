@@ -9,7 +9,7 @@ use strum::Display;
 
 use crate::{
   mode::Mode,
-  redux::state::{Dialog, ReplaceTextKind, SearchListState, SearchResultState, SearchTextKind},
+  redux::state::{Dialog, FocusedScreen, ReplaceTextKind, SearchListState, SearchResultState, SearchTextKind},
   tabs::Tab,
 };
 
@@ -29,4 +29,5 @@ pub enum Action {
   ResetState,
   SetNotification { message: String, show: bool, ttl: u64, color: Color },
   SetDialog { dialog: Option<Dialog> },
+  SetFocusedScreen { screen: Option<FocusedScreen> },
 }

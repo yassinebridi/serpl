@@ -60,6 +60,7 @@ impl Component for Replace {
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::ReplaceInput {
       match (key.code, key.modifiers) {
+        (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
@@ -103,7 +104,7 @@ impl Component for Replace {
       .title(Title::from("Replace").alignment(Alignment::Left))
       .title(Title::from(replace_kind).alignment(Alignment::Right));
 
-    let block = if state.active_tab == Tab::Replace {
+    let block = if state.focused_screen == FocusedScreen::ReplaceInput {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {
       block
@@ -117,7 +118,7 @@ impl Component for Replace {
       .scroll((0, scroll as u16))
       .block(block);
 
-    if state.active_tab == Tab::Replace {
+    if state.focused_screen == FocusedScreen::ReplaceInput {
       f.set_cursor(
         layout.replace_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
         layout.replace_input.y + 1,

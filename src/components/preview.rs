@@ -152,7 +152,7 @@ impl Component for Preview {
     let layout = get_layout(area);
     let block = Block::default().borders(Borders::ALL).border_type(BorderType::Rounded).title("Preview");
     let block =
-      if state.active_tab == Tab::Preview { block.border_style(Style::default().fg(Color::Green)) } else { block };
+      if state.focused_screen == FocusedScreen::Preview { block.border_style(Style::default().fg(Color::Green)) } else { block };
 
     fn create_line_with_number<'a>(
       line_number: usize,

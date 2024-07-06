@@ -22,6 +22,7 @@ pub struct State {
   pub dialog: Option<Dialog>,
   pub project_root: PathBuf,
   pub focused_screen: FocusedScreen,
+  pub previous_focused_screen: FocusedScreen,
   pub help_dialog_visible: bool,
   pub is_large_folder: bool,
 }

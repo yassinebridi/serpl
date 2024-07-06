@@ -53,6 +53,7 @@ pub fn reducer(state: State, action: Action) -> State {
       }
       State {
         active_tab: tab,
+        previous_focused_screen: state.focused_screen,
         focused_screen: match tab {
           Tab::Search => FocusedScreen::SearchInput,
           Tab::Replace => FocusedScreen::ReplaceInput,
@@ -68,6 +69,7 @@ pub fn reducer(state: State, action: Action) -> State {
         return state;
       }
       State {
+        previous_focused_screen: state.focused_screen,
         active_tab: match state.active_tab {
           Tab::Search => Tab::Replace,
           Tab::Replace => Tab::SearchResult,
@@ -89,6 +91,7 @@ pub fn reducer(state: State, action: Action) -> State {
         return state;
       }
       State {
+        previous_focused_screen: state.focused_screen,
         active_tab: match state.active_tab {
           Tab::Search => Tab::SearchResult,
           Tab::Replace => Tab::Search,
@@ -114,12 +117,20 @@ pub fn reducer(state: State, action: Action) -> State {
       let temporary_dialog = dialog.clone();
       State {
         dialog,
+        previous_focused_screen: state.focused_screen.clone(),
         focused_screen: match temporary_dialog {
           Some(Dialog::ConfirmGitDirectory(_)) => FocusedScreen::ConfirmGitDirectoryDialog,
           Some(Dialog::ConfirmReplace(_)) => FocusedScreen::ConfirmReplaceDialog,
           Some(Dialog::HelpDialog(_)) => FocusedScreen::HelpDialog,
-          _ => FocusedScreen::SearchInput,
+          _ => state.focused_screen,
         },
+        ..state
+      }
+    },
+    Action::SetFocusedScreen { screen } => {
+      State {
+        previous_focused_screen: state.focused_screen,
+        focused_screen: screen.unwrap_or(FocusedScreen::SearchInput),
         ..state
       }
     },
