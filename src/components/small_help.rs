@@ -55,12 +55,13 @@ impl Component for SmallHelp {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
     let content = match state.focused_screen {
-      FocusedScreen::SearchInput => "Search: <Enter> | Switch to Replace: <Tab> | Toggle search mode: <Ctrl-n>",
-      FocusedScreen::ReplaceInput => "Replace: <C-o> | Switch to Search List: <Tab> | Toggle replace mode: <Ctrl-n>",
-      FocusedScreen::SearchResultList => "Open File: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete file: <d>",
-      FocusedScreen::Preview => "Back to list: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete line: <d>",
+      FocusedScreen::SearchInput => "Help: <Ctrl-b> | Search: <Enter> | Switch to Replace: <Tab> | Toggle search mode: <Ctrl-n>",
+      FocusedScreen::ReplaceInput => "Help: <Ctrl-b> | Replace: <C-o> | Switch to Search List: <Tab> | Toggle replace mode: <Ctrl-n>",
+      FocusedScreen::SearchResultList => "Help: <Ctrl-b> | Open File: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete file: <d>",
+      FocusedScreen::Preview => "Help: <Ctrl-b> | Back to list: <Enter> | Switch to Search: <Tab> | Next: <j> | Previous: <k> | Top: <g> | Bottom: <G> | Delete line: <d>",
       FocusedScreen::ConfirmReplaceDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
       FocusedScreen::ConfirmGitDirectoryDialog => "Confirm Replace: <Enter> | Cancel Replace: <Esc>, Left: <h>, Right: <l>, Loop: <Tab>",
+      FocusedScreen::HelpDialog => "Close Help: <Esc> | Next Tab: <Right> | Previous Tab: <Left>",
     };
 
     let small_help = SmallHelpWidget::new(content.to_string(), Color::Blue, Alignment::Left);

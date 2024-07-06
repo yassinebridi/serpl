@@ -15,7 +15,7 @@ use crate::{
   components::notifications::NotificationEnum,
   redux::{
     action::Action,
-    state::{ConfirmDialog, Dialog, DialogAction, ReplaceTextKind, SearchTextKind, State},
+    state::{ConfirmDialogState, Dialog, DialogAction, ReplaceTextKind, SearchTextKind, State},
     thunk::{ForceReplace, ThunkAction},
   },
   utils::is_git_repo,
@@ -172,7 +172,7 @@ where
       return;
     } else if replace_text_state.text.is_empty() {
       let confirm_dialog = Action::SetDialog {
-        dialog: Some(Dialog::ConfirmReplace(ConfirmDialog {
+        dialog: Some(Dialog::ConfirmReplace(ConfirmDialogState {
           message: "Replace text is empty, and replacing with an empty string will remove the matched text.\n Are you sure you want to continue?"
             .to_string(),
           on_confirm: Some(DialogAction::ConfirmReplace),
@@ -192,7 +192,7 @@ where
       self.handle_confirm(store.clone()).await;
     } else {
       let confirm_dialog = Action::SetDialog {
-        dialog: Some(Dialog::ConfirmGitDirectory(ConfirmDialog {
+        dialog: Some(Dialog::ConfirmGitDirectory(ConfirmDialogState {
           message: "This action will modify the files in this directory.\n Are you sure you want to continue?"
             .to_string(),
           on_confirm: Some(DialogAction::ConfirmReplace),

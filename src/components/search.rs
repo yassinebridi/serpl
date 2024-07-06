@@ -95,7 +95,7 @@ impl Component for Search {
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::SearchInput {
       match (key.code, key.modifiers) {
-        (KeyCode::Tab, _) | (KeyCode::BackTab, _) => Ok(None),
+        (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let search_text_kind = match state.search_text.kind {
             SearchTextKind::Simple => SearchTextKind::MatchCase,
@@ -166,7 +166,7 @@ impl Component for Search {
       .title(Title::from("Search").alignment(Alignment::Left))
       .title(Title::from(search_kind).alignment(Alignment::Right));
 
-    let block = if state.active_tab == Tab::Search {
+    let block = if state.focused_screen == FocusedScreen::SearchInput {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {
       block
@@ -180,7 +180,7 @@ impl Component for Search {
       .scroll((0, scroll as u16))
       .block(block);
 
-    if state.active_tab == Tab::Search {
+    if state.focused_screen == FocusedScreen::SearchInput {
       f.set_cursor(
         layout.search_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
         layout.search_input.y + 1,

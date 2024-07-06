@@ -13,6 +13,7 @@ use crate::{
 
 pub mod confirm_empty_replace_dialog;
 pub mod confirm_git_dir_dialog;
+pub mod help_dialog;
 pub mod notifications;
 pub mod preview;
 pub mod replace;

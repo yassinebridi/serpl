@@ -22,7 +22,7 @@ use crate::{
   config::{Config, KeyBindings},
   redux::{
     action::Action,
-    state::{ConfirmDialog, Dialog, DialogAction, State},
+    state::{Dialog, DialogAction, State},
     thunk::{ForceReplace, ThunkAction},
   },
   ripgrep::RipgrepOutput,

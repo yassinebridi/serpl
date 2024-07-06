@@ -21,6 +21,7 @@ use crate::{
   components::{
     confirm_empty_replace_dialog::ConfirmEmptyReplaceDialog,
     confirm_git_dir_dialog::ConfirmGitDirDialog,
+    help_dialog::HelpDialog,
     notifications::{NotificationEnum, Notifications},
     preview::Preview,
     replace::Replace,
@@ -69,6 +70,7 @@ impl App {
     let small_help = SmallHelp::default();
     let confirm_git_dir_dialog = ConfirmGitDirDialog::default();
     let confirm_empty_replace_dialog = ConfirmEmptyReplaceDialog::default();
+    let help_dialog = HelpDialog::new();
     let status = Status::default();
     Ok(Self {
       tick_rate: 4.0,
@@ -83,6 +85,7 @@ impl App {
         Box::new(status),
         Box::new(confirm_git_dir_dialog),
         Box::new(confirm_empty_replace_dialog),
+        Box::new(help_dialog),
       ],
       should_quit: false,
       should_suspend: false,
@@ -101,7 +104,6 @@ impl App {
       Ok(output) => {
         if output.status.success() {
           let file_count = String::from_utf8_lossy(&output.stdout).lines().count();
-          log::info!("File count: {}", file_count);
           file_count > FILE_COUNT_THRESHOLD
         } else {
           log::error!("ripgrep command failed: {}", String::from_utf8_lossy(&output.stderr));

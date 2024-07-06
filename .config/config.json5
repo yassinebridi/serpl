@@ -7,5 +7,6 @@
     "<Tab>": "LoopOverTabs",
     "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
+    "<Ctrl-b>": "ShowHelp",
   }
 }

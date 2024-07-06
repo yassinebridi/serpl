@@ -17,15 +17,7 @@ pub fn reducer(state: State, action: Action) -> State {
     Action::SetSearchList { search_list } => State { search_result: search_list, ..state },
     Action::SetSelectedResult { result } => State { selected_result: result, ..state },
     Action::SetSearchText { text } => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
@@ -33,15 +25,7 @@ pub fn reducer(state: State, action: Action) -> State {
       State { search_text: SearchTextState { text, kind: search_kind.clone() }, ..state }
     },
     Action::SetReplaceText { text } => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
@@ -49,51 +33,27 @@ pub fn reducer(state: State, action: Action) -> State {
       State { replace_text: ReplaceTextState { text, kind: replace_kind.clone() }, ..state }
     },
     Action::SetSearchTextKind { kind } => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
       State { search_text: SearchTextState { kind, text: state.search_text.text.clone() }, ..state }
     },
     Action::SetReplaceTextKind { kind } => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
       State { replace_text: ReplaceTextState { kind, text: state.replace_text.text.clone() }, ..state }
     },
     Action::SetActiveTab { tab } => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
-
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
       State {
         active_tab: tab,
+        previous_focused_screen: state.focused_screen,
         focused_screen: match tab {
           Tab::Search => FocusedScreen::SearchInput,
           Tab::Replace => FocusedScreen::ReplaceInput,
@@ -104,20 +64,12 @@ pub fn reducer(state: State, action: Action) -> State {
       }
     },
     Action::LoopOverTabs => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
-
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
       State {
+        previous_focused_screen: state.focused_screen,
         active_tab: match state.active_tab {
           Tab::Search => Tab::Replace,
           Tab::Replace => Tab::SearchResult,
@@ -134,20 +86,12 @@ pub fn reducer(state: State, action: Action) -> State {
       }
     },
     Action::BackLoopOverTabs => {
-      let is_dialog_visible = match &state.dialog {
-        Some(dialog) => {
-          match dialog {
-            Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-            Dialog::ConfirmReplace(dialog) => dialog.show,
-          }
-        },
-        None => false,
-      };
-
+      let is_dialog_visible = check_dialog_visible(&state);
       if is_dialog_visible {
         return state;
       }
       State {
+        previous_focused_screen: state.focused_screen,
         active_tab: match state.active_tab {
           Tab::Search => Tab::SearchResult,
           Tab::Replace => Tab::Search,
@@ -173,13 +117,35 @@ pub fn reducer(state: State, action: Action) -> State {
       let temporary_dialog = dialog.clone();
       State {
         dialog,
+        previous_focused_screen: state.focused_screen.clone(),
         focused_screen: match temporary_dialog {
           Some(Dialog::ConfirmGitDirectory(_)) => FocusedScreen::ConfirmGitDirectoryDialog,
           Some(Dialog::ConfirmReplace(_)) => FocusedScreen::ConfirmReplaceDialog,
-          _ => FocusedScreen::SearchInput,
+          Some(Dialog::HelpDialog(_)) => FocusedScreen::HelpDialog,
+          _ => state.focused_screen,
         },
         ..state
       }
     },
+    Action::SetFocusedScreen { screen } => {
+      State {
+        previous_focused_screen: state.focused_screen,
+        focused_screen: screen.unwrap_or(FocusedScreen::SearchInput),
+        ..state
+      }
+    },
+  }
+}
+
+fn check_dialog_visible(state: &State) -> bool {
+  match &state.dialog {
+    Some(dialog) => {
+      match dialog {
+        Dialog::ConfirmGitDirectory(dialog) => dialog.show,
+        Dialog::ConfirmReplace(dialog) => dialog.show,
+        Dialog::HelpDialog(dialog) => dialog.show,
+      }
+    },
+    None => false,
   }
 }
