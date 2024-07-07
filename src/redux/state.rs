@@ -45,7 +45,7 @@ pub struct SearchTextState {
   pub kind: SearchTextKind,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq, Copy)]
 pub enum SearchTextKind {
   #[default]
   Simple,
@@ -53,6 +53,7 @@ pub enum SearchTextKind {
   MatchWholeWord,
   MatchCaseWholeWord,
   Regex,
+  AstGrep,
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -61,11 +62,12 @@ pub struct ReplaceTextState {
   pub kind: ReplaceTextKind,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq, Copy)]
 pub enum ReplaceTextKind {
   #[default]
   Simple,
   PreserveCase,
+  AstGrep,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]

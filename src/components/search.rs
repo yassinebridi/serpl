@@ -24,7 +24,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{FocusedScreen, SearchResultState, SearchTextKind, State},
+    state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State},
     thunk::ThunkAction,
   },
   ripgrep::RipgrepOutput,
@@ -80,6 +80,12 @@ impl Search {
   fn change_kind(&mut self, search_text_kind: SearchTextKind, state: &State) {
     let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: search_text_kind });
     self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
+
+    if search_text_kind == SearchTextKind::AstGrep {
+      let replace_text_action = AppAction::Action(Action::SetReplaceTextKind { kind: ReplaceTextKind::AstGrep });
+      self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
+    }
+
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
     self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
     self.set_selected_result(state);
@@ -102,7 +108,8 @@ impl Component for Search {
             SearchTextKind::MatchCase => SearchTextKind::MatchWholeWord,
             SearchTextKind::MatchWholeWord => SearchTextKind::MatchCaseWholeWord,
             SearchTextKind::MatchCaseWholeWord => SearchTextKind::Regex,
-            SearchTextKind::Regex => SearchTextKind::Simple,
+            SearchTextKind::Regex => SearchTextKind::AstGrep,
+            SearchTextKind::AstGrep => SearchTextKind::Simple,
           };
           self.change_kind(search_text_kind, state);
           Ok(None)
@@ -159,6 +166,7 @@ impl Component for Search {
       SearchTextKind::MatchWholeWord => "[Match Whole Word]",
       SearchTextKind::Regex => "[Regex]",
       SearchTextKind::MatchCaseWholeWord => "[Match Case Whole Word]",
+      SearchTextKind::AstGrep => "[AST Grep]",
     };
 
     let block = Block::bordered()

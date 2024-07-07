@@ -17,7 +17,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{FocusedScreen, ReplaceTextKind, State},
+    state::{FocusedScreen, ReplaceTextKind, SearchTextKind, State},
     thunk::ThunkAction,
   },
   tabs::Tab,
@@ -46,6 +46,12 @@ impl Replace {
   fn change_kind(&mut self, replace_text_kind: ReplaceTextKind) {
     let replace_text_action = AppAction::Action(Action::SetReplaceTextKind { kind: replace_text_kind });
     self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
+
+    if replace_text_kind == ReplaceTextKind::AstGrep {
+      let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: SearchTextKind::AstGrep });
+      self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
+    }
+
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
     self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
   }
@@ -64,7 +70,8 @@ impl Component for Replace {
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
-            ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
+            ReplaceTextKind::PreserveCase => ReplaceTextKind::AstGrep,
+            ReplaceTextKind::AstGrep => ReplaceTextKind::Simple,
           };
           self.change_kind(replace_text_kind);
           Ok(None)
@@ -97,6 +104,7 @@ impl Component for Replace {
     let replace_kind = match state.replace_text.kind {
       ReplaceTextKind::Simple => "[Simple]",
       ReplaceTextKind::PreserveCase => "[Preserve Case]",
+      ReplaceTextKind::AstGrep => "[AST Grep]",
     };
 
     let block = Block::bordered()

@@ -22,7 +22,7 @@ pub fn reducer(state: State, action: Action) -> State {
         return state;
       }
       let search_kind = &state.search_text.kind;
-      State { search_text: SearchTextState { text, kind: search_kind.clone() }, ..state }
+      State { search_text: SearchTextState { text, kind: *search_kind }, ..state }
     },
     Action::SetReplaceText { text } => {
       let is_dialog_visible = check_dialog_visible(&state);
@@ -30,7 +30,7 @@ pub fn reducer(state: State, action: Action) -> State {
         return state;
       }
       let replace_kind = &state.replace_text.kind;
-      State { replace_text: ReplaceTextState { text, kind: replace_kind.clone() }, ..state }
+      State { replace_text: ReplaceTextState { text, kind: *replace_kind }, ..state }
     },
     Action::SetSearchTextKind { kind } => {
       let is_dialog_visible = check_dialog_visible(&state);
