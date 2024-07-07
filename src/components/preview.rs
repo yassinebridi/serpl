@@ -51,10 +51,13 @@ impl Preview {
 
   fn next(&mut self) {
     if let Some(current_index) = self.lines_state.selected() {
-      let current_position = self.non_divider_lines.iter().position(|&index| index == current_index).unwrap_or(0);
-      if current_position + 1 < self.non_divider_lines.len() {
-        self.lines_state.select(Some(self.non_divider_lines[current_position + 1]));
-      }
+      let next_index = self
+        .non_divider_lines
+        .iter()
+        .position(|&index| index > current_index)
+        .map(|pos| self.non_divider_lines[pos])
+        .unwrap_or_else(|| self.non_divider_lines[0]);
+      self.lines_state.select(Some(next_index));
     } else if !self.non_divider_lines.is_empty() {
       self.lines_state.select(Some(self.non_divider_lines[0]));
     }
@@ -62,12 +65,16 @@ impl Preview {
 
   fn previous(&mut self) {
     if let Some(current_index) = self.lines_state.selected() {
-      let current_position = self.non_divider_lines.iter().position(|&index| index == current_index).unwrap_or(0);
-      if current_position > 0 {
-        self.lines_state.select(Some(self.non_divider_lines[current_position - 1]));
-      }
+      let prev_index = self
+        .non_divider_lines
+        .iter()
+        .rev()
+        .position(|&index| index < current_index)
+        .map(|pos| self.non_divider_lines[self.non_divider_lines.len() - 1 - pos])
+        .unwrap_or_else(|| *self.non_divider_lines.last().unwrap());
+      self.lines_state.select(Some(prev_index));
     } else if !self.non_divider_lines.is_empty() {
-      self.lines_state.select(Some(self.non_divider_lines[0]));
+      self.lines_state.select(Some(*self.non_divider_lines.last().unwrap()));
     }
   }
 
@@ -90,6 +97,29 @@ impl Preview {
       let remove_line_from_file_thunk = AppAction::Thunk(ThunkAction::RemoveLineFromFile(file_index, line_index));
       self.command_tx.as_ref().unwrap().send(remove_line_from_file_thunk).unwrap();
     }
+  }
+
+  fn format_match_line<'a>(&self, line: &'a str, submatches: &[SubMatch], replace_text: &'a str) -> Vec<Span<'a>> {
+    let mut spans = vec![];
+    let mut last_end = 0;
+
+    for submatch in submatches {
+      if submatch.start > last_end {
+        spans.push(Span::raw(&line[last_end..submatch.start]));
+      }
+
+      let matched_text = &line[submatch.start..submatch.end];
+      spans.push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
+      spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+
+      last_end = submatch.end;
+    }
+
+    if last_end < line.len() {
+      spans.push(Span::raw(&line[last_end..]));
+    }
+
+    spans
   }
 }
 
@@ -157,91 +187,61 @@ impl Component for Preview {
       block
     };
 
-    fn create_line_with_number<'a>(
-      line_number: usize,
-      line: &'a str,
-      matches: &[SubMatch],
-      replace_text: &'a str,
-      search_kind: SearchTextKind,
-      replace_kind: ReplaceTextKind,
-    ) -> Line<'a> {
-      let mut spans = vec![Span::styled(format!("{:4} ", line_number), Style::default().fg(Color::Blue))];
-      let mut last_end = 0;
-
-      for mat in matches {
-        if mat.start > last_end {
-          spans.push(Span::raw(&line[last_end..mat.start]));
-        }
-
-        let matched_text = &line[mat.start..mat.end];
-        let replaced_text = match replace_kind {
-          ReplaceTextKind::PreserveCase => {
-            let first_char = matched_text.chars().next().unwrap_or_default();
-            if matched_text.chars().all(char::is_uppercase) {
-              replace_text.to_uppercase()
-            } else if first_char.is_uppercase() {
-              replace_text
-                .chars()
-                .enumerate()
-                .map(|(i, rc)| if i == 0 { rc.to_uppercase().to_string() } else { rc.to_lowercase().to_string() })
-                .collect::<String>()
-            } else {
-              replace_text.to_lowercase()
-            }
-          },
-          ReplaceTextKind::Simple => replace_text.to_string(),
-        };
-
-        if replaced_text.is_empty() {
-          spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue).add_modifier(Modifier::BOLD)));
-        } else {
-          spans
-            .push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
-          spans.push(Span::styled(replaced_text, Style::default().fg(Color::White).bg(Color::Green)));
-        }
-
-        last_end = mat.end;
-      }
-
-      if last_end < line.len() {
-        spans.push(Span::raw(&line[last_end..]));
-      }
-      Line::from(spans)
-    }
-
     let mut lines = vec![];
-    let mut last_match = None;
     self.non_divider_lines.clear();
 
-    for result in &state.selected_result.matches {
-      let line_number = result.line_number;
-      let line = &result.lines.as_ref().unwrap().text;
+    lines.push(Line::from("-".repeat(area.width as usize)).fg(Color::DarkGray));
 
-      if let Some(last) = last_match {
-        if line_number > last + 1 {
-          let divider_line = Line::from("-".repeat(area.width as usize)).fg(Color::DarkGray);
-          lines.push(divider_line);
+    for (match_index, result) in state.selected_result.matches.iter().enumerate() {
+      let line_number = result.line_number;
+      let start_index = lines.len();
+      let is_selected = self.lines_state.selected().map(|s| s >= start_index && s < start_index + 6).unwrap_or(false);
+
+      if is_selected {
+        if let Some(last_line) = lines.last_mut() {
+          *last_line = Line::from("-".repeat(area.width as usize)).fg(Color::Yellow);
         }
       }
 
-      self.non_divider_lines.push(lines.len());
-      lines.push(create_line_with_number(
-        line_number,
-        line,
-        &result.submatches,
-        &state.replace_text.text,
-        state.search_text.kind.clone(),
-        state.replace_text.kind.clone(),
-      ));
+      for (i, line) in result.context_before.iter().enumerate() {
+        let line_style =
+          if is_selected { Style::default().fg(Color::White) } else { Style::default().fg(Color::DarkGray) };
+        let context_line_number = line_number.saturating_sub(result.context_before.len() - i);
+        let spans = vec![
+          Span::styled(format!("{:4} ", context_line_number), Style::default().fg(Color::Blue)),
+          Span::styled(line, line_style),
+        ];
+        lines.push(Line::from(spans));
+      }
 
-      last_match = Some(line_number);
+      let match_line = result.lines.as_ref().unwrap().text.as_str();
+      let formatted_line = self.format_match_line(match_line, &result.submatches, &state.replace_text.text);
+      let mut spans = vec![Span::styled(format!("{:4} ", line_number), Style::default().fg(Color::Blue))];
+      spans.extend(formatted_line);
+      self.non_divider_lines.push(lines.len());
+      lines.push(Line::from(spans));
+
+      for (i, line) in result.context_after.iter().enumerate() {
+        let line_style =
+          if is_selected { Style::default().fg(Color::White) } else { Style::default().fg(Color::DarkGray) };
+        let spans = vec![
+          Span::styled(format!("{:4} ", line_number + i + 1), Style::default().fg(Color::Blue)),
+          Span::styled(line, line_style),
+        ];
+        lines.push(Line::from(spans));
+      }
+
+      let divider_color = if is_selected { Color::Yellow } else { Color::DarkGray };
+      lines.push(Line::from("-".repeat(area.width as usize)).fg(divider_color));
     }
 
     self.total_lines = lines.len();
     let text = Text::from(lines);
 
+    let highlight_style = Style::default().add_modifier(Modifier::BOLD).fg(Color::White);
+
     let preview_widget =
-      List::new(text).highlight_style(Style::default().add_modifier(Modifier::BOLD)).block(block).scroll_padding(4);
+      List::new(text).highlight_style(highlight_style).block(block).highlight_symbol("> ").scroll_padding(4);
 
     f.render_stateful_widget(preview_widget, layout.preview, &mut self.lines_state);
 

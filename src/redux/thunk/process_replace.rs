@@ -39,7 +39,6 @@ impl ProcessReplaceThunk {
     let processing_status_action = AppAction::Tui(TuiAction::Status("Processing search and replace..".to_string()));
     self.command_tx.send(processing_status_action).unwrap();
 
-    // Compile regex with case-insensitive flag if needed
     let re = match search_text_state.kind {
       SearchTextKind::Regex => {
         RegexBuilder::new(&search_text_state.text).case_insensitive(true).build().expect("Invalid regex")
@@ -73,28 +72,19 @@ impl ProcessReplaceThunk {
     for search_result in &search_list.list {
       let file_path = &search_result.path;
 
-      // Read the file content
       let content = fs::read_to_string(file_path).expect("Unable to read file");
 
-      // Create a new content buffer
       let mut new_content = String::new();
 
-      // Track the last end index to handle replacements
       let mut last_end = 0;
 
       for mat in &search_result.matches {
         let line_number = mat.line_number;
-        let line_start = content
-                      .lines()
-                      .take(line_number - 1)
-                      .map(|line| line.len() + 1) // +1 for the newline character
-                      .sum::<usize>();
+        let line_start = content.lines().take(line_number - 1).map(|line| line.len() + 1).sum::<usize>();
         let line_end = line_start + mat.lines.as_ref().unwrap().text.len();
 
-        // Push the unchanged part of the content
         new_content.push_str(&content[last_end..line_start]);
 
-        // Replace the matched parts within the line
         let line = mat.lines.as_ref().unwrap().text.clone();
         let replaced_line = re
           .replace_all(&line, |caps: &regex::Captures| {
@@ -120,16 +110,13 @@ impl ProcessReplaceThunk {
           })
           .to_string();
 
-        // Add the modified line to the new content
         new_content.push_str(&replaced_line);
 
         last_end = line_end;
       }
 
-      // Add the remaining content after the last match
       new_content.push_str(&content[last_end..]);
 
-      // Write the new content back to the file
       let mut file = fs::OpenOptions::new().write(true).truncate(true).open(file_path).expect("Unable to open file");
       file.write_all(new_content.as_bytes()).expect("Unable to write file");
     }
@@ -186,7 +173,6 @@ where
 
       store.dispatch(confirm_dialog).await;
 
-      // Here we return early, the dialog will handle the user input and trigger actions
       return;
     } else if is_git_repo(project_root) {
       self.handle_confirm(store.clone()).await;
@@ -206,7 +192,6 @@ where
 
       store.dispatch(confirm_dialog).await;
 
-      // Here we return early, the dialog will handle the user input and trigger actions
       return;
     }
   }

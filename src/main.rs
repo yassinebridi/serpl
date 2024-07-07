@@ -28,7 +28,7 @@ use crate::{
 };
 
 async fn tokio_main() -> Result<()> {
-  let _ = simple_logging::log_to_file("serpl.log", LevelFilter::Info);
+  // let _ = simple_logging::log_to_file("serpl.log", LevelFilter::Info);
 
   initialize_panic_handler()?;
 
