@@ -43,7 +43,17 @@ impl ProcessReplaceThunk {
         let file_path = &search_result.path;
 
         let output = Command::new("sg")
-          .args(["run", "-p", &search_text_state.text, "-r", &replace_text_state.text, "--json", file_path])
+          .args([
+            "run",
+            "-p",
+            &search_text_state.text,
+            "-r",
+            &replace_text_state.text,
+            "--json=compact",
+            file_path,
+            "--update-all",
+            ""
+          ])
           .output()
           .expect("Failed to execute ast-grep for replacement");
 
@@ -152,18 +162,17 @@ impl ProcessReplaceThunk {
         let mut file = fs::OpenOptions::new().write(true).truncate(true).open(file_path).expect("Unable to open file");
         file.write_all(new_content.as_bytes()).expect("Unable to write file");
       }
-
-      store.dispatch(Action::ResetState).await;
-      let reset_action = AppAction::Tui(TuiAction::Reset);
-      self.command_tx.send(reset_action).unwrap();
-      let done_processing_status_action = AppAction::Tui(TuiAction::Status("".to_string()));
-      self.command_tx.send(done_processing_status_action).unwrap();
-
-      let search_text_action = AppAction::Tui(TuiAction::Notify(NotificationEnum::Info(
-        "Search and replace completed successfully".to_string(),
-      )));
-      self.command_tx.send(search_text_action).unwrap();
     }
+    store.dispatch(Action::ResetState).await;
+    let reset_action = AppAction::Tui(TuiAction::Reset);
+    self.command_tx.send(reset_action).unwrap();
+    let done_processing_status_action = AppAction::Tui(TuiAction::Status("".to_string()));
+    self.command_tx.send(done_processing_status_action).unwrap();
+
+    let search_text_action = AppAction::Tui(TuiAction::Notify(NotificationEnum::Info(
+      "Search and replace completed successfully".to_string(),
+    )));
+    self.command_tx.send(search_text_action).unwrap();
   }
 
   async fn handle_cancel(&self, store: Arc<impl StoreApi<State, Action>>) {

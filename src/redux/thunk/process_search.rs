@@ -47,7 +47,7 @@ where
       store.dispatch(Action::SetSearchList { search_list: SearchListState::default() }).await;
       if search_text_state.kind == SearchTextKind::AstGrep {
         let output = Command::new("sg")
-          .args(["run", "-p", &search_text_state.text, "--json", project_root.to_str().unwrap()])
+          .args(["run", "-p", &search_text_state.text, "--json=compact", project_root.to_str().unwrap()])
           .output()
           .expect("Failed to execute ast-grep");
 
