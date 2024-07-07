@@ -1,5 +1,5 @@
 use std::{
-  collections::{HashMap, HashSet},
+  collections::{HashMap, HashSet, VecDeque},
   process::Command,
   sync::Arc,
 };
@@ -41,13 +41,11 @@ where
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
 
-    // Ensure search_text is set
     if !search_text_state.text.is_empty() {
       store.dispatch(Action::SetSearchList { search_list: SearchListState::default() }).await;
 
-      let mut rg_args = vec!["--json"];
+      let mut rg_args = vec!["--json", "-C", "3"];
 
-      // Determine the appropriate ripgrep command arguments based on the search kind
       match search_text_state.kind {
         SearchTextKind::Regex => rg_args.push(&search_text_state.text),
         SearchTextKind::MatchCase => rg_args.extend(&["-s", &search_text_state.text]),
@@ -67,28 +65,16 @@ where
       let mut path_to_result: HashMap<String, usize> = HashMap::new();
       let mut summary: Option<RipgrepSummary> = None;
 
+      let mut context_buffer: VecDeque<(usize, String)> = VecDeque::new();
+
       for line in stdout.lines() {
         if let Ok(rg_output) = serde_json::from_str::<RipgrepOutput>(line) {
           match rg_output.kind.as_str() {
-            "match" => {
+            "match" | "context" => {
               if let Some(data) = rg_output.data {
                 let path = data.path.unwrap().text;
-                let line_number = data.line_number.unwrap_or_default();
+                let line_number = data.line_number.unwrap_or_default() as usize;
                 let absolute_offset = data.absolute_offset.unwrap_or_default();
-
-                let submatches: Vec<SubMatch> = data
-                  .submatches
-                  .unwrap_or_default()
-                  .into_iter()
-                  .map(|sm| SubMatch { start: sm.start as usize, end: sm.end as usize })
-                  .collect();
-
-                let mat = Match {
-                  lines: data.lines,
-                  line_number: line_number as usize,
-                  absolute_offset: absolute_offset as usize,
-                  submatches: submatches.clone(),
-                };
 
                 let search_result_index = path_to_result.entry(path.clone()).or_insert_with(|| {
                   let index = results.len();
@@ -101,9 +87,44 @@ where
                   index
                 });
 
-                results[*search_result_index].matches.push(mat);
-                // Increment the total_matches count by the number of submatches
-                results[*search_result_index].total_matches += submatches.len();
+                let result = &mut results[*search_result_index];
+
+                if rg_output.kind == "match" {
+                  let submatches: Vec<SubMatch> = data
+                    .submatches
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|sm| SubMatch { start: sm.start as usize, end: sm.end as usize })
+                    .collect();
+
+                  let mut context_before: Vec<String> = context_buffer.drain(..).map(|(_, line)| line).collect();
+                  if context_before.len() > 3 {
+                    context_before = context_before.clone().into_iter().skip(context_before.len() - 3).collect();
+                  }
+
+                  result.matches.push(Match {
+                    lines: data.lines.clone(),
+                    line_number,
+                    context_before,
+                    context_after: Vec::new(),
+                    absolute_offset: absolute_offset as usize,
+                    submatches: submatches.clone(),
+                  });
+                  result.total_matches += submatches.len();
+
+                  context_buffer.push_back((line_number, data.lines.unwrap().text));
+                } else {
+                  context_buffer.push_back((line_number, data.lines.clone().unwrap().text));
+                  if context_buffer.len() > 4 {
+                    context_buffer.pop_front();
+                  }
+
+                  if let Some(last_match) = result.matches.last_mut() {
+                    if line_number > last_match.line_number && last_match.context_after.len() < 3 {
+                      last_match.context_after.push(data.lines.unwrap().text);
+                    }
+                  }
+                }
               }
             },
             "summary" => {

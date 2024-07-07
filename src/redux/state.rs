@@ -131,6 +131,8 @@ pub struct SearchResultState {
 pub struct Match {
   pub line_number: usize,
   pub lines: Option<RipgrepLines>,
+  pub context_before: Vec<String>,
+  pub context_after: Vec<String>,
   pub absolute_offset: usize,
   pub submatches: Vec<SubMatch>,
 }
