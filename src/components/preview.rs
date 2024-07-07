@@ -99,7 +99,12 @@ impl Preview {
     }
   }
 
-  fn format_match_line<'a>(&self, line: &'a str, submatches: &[SubMatch], replace_text: &'a str) -> Vec<Span<'a>> {
+  fn format_match_line<'a>(
+    &self,
+    line: &'a str,
+    submatches: &[SubMatch],
+    replacement: Option<&'a str>,
+  ) -> Vec<Span<'a>> {
     let mut spans = vec![];
     let mut last_end = 0;
 
@@ -110,7 +115,10 @@ impl Preview {
 
       let matched_text = &line[submatch.start..submatch.end];
       spans.push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
-      spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+
+      if let Some(replace_text) = replacement {
+        spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+      }
 
       last_end = submatch.end;
     }
@@ -215,7 +223,7 @@ impl Component for Preview {
       }
 
       let match_line = result.lines.as_ref().unwrap().text.as_str();
-      let formatted_line = self.format_match_line(match_line, &result.submatches, &state.replace_text.text);
+      let formatted_line = self.format_match_line(match_line, &result.submatches, result.replacement.as_deref());
       let mut spans = vec![Span::styled(format!("{:4} ", line_number), Style::default().fg(Color::Blue))];
       spans.extend(formatted_line);
       self.non_divider_lines.push(lines.len());

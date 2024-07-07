@@ -137,6 +137,7 @@ pub struct Match {
   pub context_after: Vec<String>,
   pub absolute_offset: usize,
   pub submatches: Vec<SubMatch>,
+  pub replacement: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]

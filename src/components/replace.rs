@@ -15,6 +15,7 @@ use crate::{
   action::{AppAction, TuiAction},
   config::{Config, KeyBindings},
   layout::get_layout,
+  mode::Mode,
   redux::{
     action::Action,
     state::{FocusedScreen, ReplaceTextKind, SearchTextKind, State},
@@ -36,11 +37,15 @@ impl Replace {
     Self::default()
   }
 
-  fn handle_input(&mut self, key: KeyEvent) {
+  fn handle_input(&mut self, key: KeyEvent, state: &State) {
     self.input.handle_event(&crossterm::event::Event::Key(key));
     let query = self.input.value();
     let replace_text_action = AppAction::Action(Action::SetReplaceText { text: query.to_string() });
     self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
+    if state.replace_text.kind == ReplaceTextKind::AstGrep {
+      let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
+      self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
+    }
   }
 
   fn change_kind(&mut self, replace_text_kind: ReplaceTextKind) {
@@ -77,7 +82,7 @@ impl Component for Replace {
           Ok(None)
         },
         _ => {
-          self.handle_input(key);
+          self.handle_input(key, state);
           Ok(None)
         },
       }

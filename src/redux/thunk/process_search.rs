@@ -41,15 +41,19 @@ where
 {
   async fn execute(&self, store: Arc<Api>) {
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
+    let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
+    let replace_text = replace_text_state.text.clone();
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
 
     if !search_text_state.text.is_empty() {
       store.dispatch(Action::SetSearchList { search_list: SearchListState::default() }).await;
       if search_text_state.kind == SearchTextKind::AstGrep {
-        let output = Command::new("sg")
-          .args(["run", "-p", &search_text_state.text, "--json=compact", project_root.to_str().unwrap()])
-          .output()
-          .expect("Failed to execute ast-grep");
+        let mut args = vec!["run", "-p", &search_text_state.text, "--json=compact", project_root.to_str().unwrap()];
+        if !replace_text.is_empty() {
+          args.push("-r");
+          args.push(&replace_text);
+        }
+        let output = Command::new("sg").args(args).output().expect("Failed to execute ast-grep");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
@@ -58,13 +62,14 @@ where
           .into_iter()
           .map(|result| {
             SearchResultState {
-              index: None, // You might want to set this based on some criteria
+              index: None,
               path: result.file,
               matches: vec![Match {
                 line_number: result.range.start.line,
                 lines: Some(RipgrepLines { text: result.lines }),
                 absolute_offset: result.range.byte_offset.start,
                 submatches: vec![SubMatch { start: result.range.start.column, end: result.range.end.column }],
+                replacement: result.replacement,
                 context_before: Vec::new(),
                 context_after: Vec::new(),
               }],
@@ -152,6 +157,7 @@ where
                       context_after: Vec::new(),
                       absolute_offset: absolute_offset as usize,
                       submatches: submatches.clone(),
+                      replacement: None,
                     });
                     result.total_matches += submatches.len();
 
