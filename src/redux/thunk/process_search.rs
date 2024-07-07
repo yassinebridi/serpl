@@ -9,13 +9,15 @@ use redux_rs::{
   middlewares::thunk::{self, Thunk},
   StoreApi,
 };
+use serde_json::from_str;
 
 use crate::{
+  astgrep::AstGrepOutput,
   redux::{
     action::Action,
     state::{Match, Metadata, SearchListState, SearchResultState, SearchTextKind, State, SubMatch},
   },
-  ripgrep::{RipgrepOutput, RipgrepSummary},
+  ripgrep::{RipgrepLines, RipgrepOutput, RipgrepSummary},
 };
 
 pub struct ProcessSearchThunk {}
@@ -44,22 +46,45 @@ where
     if !search_text_state.text.is_empty() {
       store.dispatch(Action::SetSearchList { search_list: SearchListState::default() }).await;
       if search_text_state.kind == SearchTextKind::AstGrep {
-        // Use ast-grep for searching
-        let output = Command::new("ast-grep")
-          .args([
-            "-p",
-            &search_text_state.text,
-            "--json",
-            "-l",
-            project_root.to_str().unwrap(),
-          ])
+        let output = Command::new("sg")
+          .args(["run", "-p", &search_text_state.text, "--json", project_root.to_str().unwrap()])
           .output()
           .expect("Failed to execute ast-grep");
 
-      // Parse ast-grep output and update the state
-      // You'll need to implement the parsing logic based on ast-grep's JSON output
-      // and convert it to the SearchListState format
-      // ...
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
+
+        let search_results: Vec<SearchResultState> = ast_grep_results
+          .into_iter()
+          .map(|result| {
+            SearchResultState {
+              index: None, // You might want to set this based on some criteria
+              path: result.file,
+              matches: vec![Match {
+                line_number: result.range.start.line,
+                lines: Some(RipgrepLines { text: result.lines }),
+                absolute_offset: result.range.byte_offset.start,
+                submatches: vec![SubMatch { start: result.range.start.column, end: result.range.end.column }],
+                context_before: Vec::new(),
+                context_after: Vec::new(),
+              }],
+              total_matches: 1,
+            }
+          })
+          .collect();
+
+        let search_list_state = SearchListState {
+          list: search_results.clone(),
+          metadata: Metadata {
+            elapsed_time: 0, // You might want to measure this
+            matched_lines: search_results.clone().len(),
+            matches: search_results.len(),
+            searches: 1,
+            searches_with_match: if search_results.is_empty() { 0 } else { 1 },
+          },
+        };
+
+        store.dispatch(Action::SetSearchList { search_list: search_list_state }).await;
       } else {
         let mut rg_args = vec!["--json", "-C", "3"];
 
@@ -71,7 +96,6 @@ where
           SearchTextKind::Simple => rg_args.extend(&["-i", &search_text_state.text]),
           _ => {},
         }
-
 
         let project_root_str = project_root.to_string_lossy();
         rg_args.push(&project_root_str);

@@ -8,10 +8,12 @@ use redux_rs::{
   StoreApi,
 };
 use regex::RegexBuilder;
+use serde_json::from_str;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
   action::{AppAction, TuiAction},
+  astgrep::AstGrepOutput,
   components::notifications::NotificationEnum,
   redux::{
     action::Action,
@@ -37,24 +39,31 @@ impl ProcessReplaceThunk {
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
     if search_text_state.kind == SearchTextKind::AstGrep {
-      // Use ast-grep for replacement
       for search_result in &search_list.list {
         let file_path = &search_result.path;
 
-        let output = Command::new("ast-grep")
-          .args([
-            "-p",
-            &search_text_state.text,
-            "--rewrite",
-            &replace_text_state.text,
-            "-l",
-            file_path,
-          ])
+        let output = Command::new("sg")
+          .args(["run", "-p", &search_text_state.text, "-r", &replace_text_state.text, "--json", file_path])
           .output()
           .expect("Failed to execute ast-grep for replacement");
 
-        // Handle the output as needed
-        // ...
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
+
+        // Read the original file content
+        let mut content = fs::read_to_string(file_path).expect("Unable to read file");
+
+        // Apply replacements in reverse order to maintain correct offsets
+        for result in ast_grep_results.iter().rev() {
+          if let (Some(replacement), Some(offsets)) = (&result.replacement, &result.replacement_offsets) {
+            let start = offsets.start;
+            let end = offsets.end;
+            content.replace_range(start..end, replacement);
+          }
+        }
+
+        // Write the modified content back to the file
+        fs::write(file_path, content).expect("Unable to write file");
       }
     } else {
       let processing_status_action = AppAction::Tui(TuiAction::Status("Processing search and replace..".to_string()));

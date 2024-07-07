@@ -1,0 +1,242 @@
+[
+  {
+    "text": "Some(Dialog::HelpDialog(HelpDialogState { show: true }))",
+    "range": {
+      "byteOffset": {
+        "start": 3675,
+        "end": 3731
+      },
+      "start": {
+        "line": 106,
+        "column": 22
+      },
+      "end": {
+        "line": 106,
+        "column": 78
+      }
+    },
+    "file": "./src/action.rs",
+    "lines": "              dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),",
+    "replacement": "None",
+    "replacementOffsets": {
+      "start": 3675,
+      "end": 3731
+    },
+    "language": "Rust",
+    "metaVariables": {
+      "single": {
+        "A": {
+          "text": "Dialog::HelpDialog(HelpDialogState { show: true })",
+          "range": {
+            "byteOffset": {
+              "start": 3680,
+              "end": 3730
+            },
+            "start": {
+              "line": 106,
+              "column": 27
+            },
+            "end": {
+              "line": 106,
+              "column": 77
+            }
+          }
+        }
+      },
+      "multi": {},
+      "transformed": {}
+    }
+  },
+  {
+    "text": "Some(tx)",
+    "range": {
+      "byteOffset": {
+        "start": 1821,
+        "end": 1829
+      },
+      "start": {
+        "line": 63,
+        "column": 22
+      },
+      "end": {
+        "line": 63,
+        "column": 30
+      }
+    },
+    "file": "./src/components/confirm_git_dir_dialog.rs",
+    "lines": "    self.command_tx = Some(tx);",
+    "replacement": "None",
+    "replacementOffsets": {
+      "start": 1821,
+      "end": 1829
+    },
+    "language": "Rust",
+    "metaVariables": {
+      "single": {
+        "A": {
+          "text": "tx",
+          "range": {
+            "byteOffset": {
+              "start": 1826,
+              "end": 1828
+            },
+            "start": {
+              "line": 63,
+              "column": 27
+            },
+            "end": {
+              "line": 63,
+              "column": 29
+            }
+          }
+        }
+      },
+      "multi": {},
+      "transformed": {}
+    }
+  },
+  {
+    "text": "Some(Dialog::ConfirmReplace(ConfirmDialogState {\n          message: \"Replace text is empty, and replacing with an empty string will remove the matched text.\\n Are you sure you want to continue?\"\n            .to_string(),\n          on_confirm: Some(DialogAction::ConfirmReplace),\n          on_cancel: Some(DialogAction::CancelReplace),\n          confirm_label: \"Continue\".to_string(),\n          cancel_label: \"Cancel\".to_string(),\n          show_cancel: true,\n          show: true,\n        }))",
+    "range": {
+      "byteOffset": {
+        "start": 7043,
+        "end": 7535
+      },
+      "start": {
+        "line": 185,
+        "column": 16
+      },
+      "end": {
+        "line": 194,
+        "column": 11
+      }
+    },
+    "file": "./src/redux/thunk/process_replace.rs",
+    "lines": "        dialog: Some(Dialog::ConfirmReplace(ConfirmDialogState {\n          message: \"Replace text is empty, and replacing with an empty string will remove the matched text.\\n Are you sure you want to continue?\"\n            .to_string(),\n          on_confirm: Some(DialogAction::ConfirmReplace),\n          on_cancel: Some(DialogAction::CancelReplace),\n          confirm_label: \"Continue\".to_string(),\n          cancel_label: \"Cancel\".to_string(),\n          show_cancel: true,\n          show: true,\n        })),",
+    "replacement": "None",
+    "replacementOffsets": {
+      "start": 7043,
+      "end": 7535
+    },
+    "language": "Rust",
+    "metaVariables": {
+      "single": {
+        "A": {
+          "text": "Dialog::ConfirmReplace(ConfirmDialogState {\n          message: \"Replace text is empty, and replacing with an empty string will remove the matched text.\\n Are you sure you want to continue?\"\n            .to_string(),\n          on_confirm: Some(DialogAction::ConfirmReplace),\n          on_cancel: Some(DialogAction::CancelReplace),\n          confirm_label: \"Continue\".to_string(),\n          cancel_label: \"Cancel\".to_string(),\n          show_cancel: true,\n          show: true,\n        })",
+          "range": {
+            "byteOffset": {
+              "start": 7048,
+              "end": 7534
+            },
+            "start": {
+              "line": 185,
+              "column": 21
+            },
+            "end": {
+              "line": 194,
+              "column": 10
+            }
+          }
+        }
+      },
+      "multi": {},
+      "transformed": {}
+    }
+  },
+  {
+    "text": "Some(DialogAction::ConfirmReplace)",
+    "range": {
+      "byteOffset": {
+        "start": 7286,
+        "end": 7320
+      },
+      "start": {
+        "line": 188,
+        "column": 22
+      },
+      "end": {
+        "line": 188,
+        "column": 56
+      }
+    },
+    "file": "./src/redux/thunk/process_replace.rs",
+    "lines": "          on_confirm: Some(DialogAction::ConfirmReplace),",
+    "replacement": "None",
+    "replacementOffsets": {
+      "start": 7286,
+      "end": 7320
+    },
+    "language": "Rust",
+    "metaVariables": {
+      "single": {
+        "A": {
+          "text": "DialogAction::ConfirmReplace",
+          "range": {
+            "byteOffset": {
+              "start": 7291,
+              "end": 7319
+            },
+            "start": {
+              "line": 188,
+              "column": 27
+            },
+            "end": {
+              "line": 188,
+              "column": 55
+            }
+          }
+        }
+      },
+      "multi": {},
+      "transformed": {}
+    }
+  },
+  {
+    "text": "Some(DialogAction::CancelReplace)",
+    "range": {
+      "byteOffset": {
+        "start": 7343,
+        "end": 7376
+      },
+      "start": {
+        "line": 189,
+        "column": 21
+      },
+      "end": {
+        "line": 189,
+        "column": 54
+      }
+    },
+    "file": "./src/redux/thunk/process_replace.rs",
+    "lines": "          on_cancel: Some(DialogAction::CancelReplace),",
+    "replacement": "None",
+    "replacementOffsets": {
+      "start": 7343,
+      "end": 7376
+    },
+    "language": "Rust",
+    "metaVariables": {
+      "single": {
+        "A": {
+          "text": "DialogAction::CancelReplace",
+          "range": {
+            "byteOffset": {
+              "start": 7348,
+              "end": 7375
+            },
+            "start": {
+              "line": 189,
+              "column": 26
+            },
+            "end": {
+              "line": 189,
+              "column": 53
+            }
+          }
+        }
+      },
+      "multi": {},
+      "transformed": {}
+    }
+  }
+]

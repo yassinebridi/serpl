@@ -12,6 +12,7 @@ pub mod macros;
 pub mod mode;
 pub mod redux;
 pub mod ripgrep;
+pub mod astgrep;
 pub mod tabs;
 pub mod tui;
 pub mod ui;
