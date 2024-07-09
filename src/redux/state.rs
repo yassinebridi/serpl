@@ -144,6 +144,8 @@ pub struct Match {
 pub struct SubMatch {
   pub start: usize,
   pub end: usize,
+  pub line_start: usize,
+  pub line_end: usize,
 }
 
 impl State {

@@ -52,7 +52,6 @@ impl ProcessReplaceThunk {
             "--json=compact",
             file_path,
             "--update-all",
-            ""
           ])
           .output()
           .expect("Failed to execute ast-grep for replacement");

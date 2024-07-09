@@ -4,6 +4,7 @@
 
 pub mod action;
 pub mod app;
+pub mod astgrep;
 pub mod cli;
 pub mod components;
 pub mod config;
@@ -12,7 +13,6 @@ pub mod macros;
 pub mod mode;
 pub mod redux;
 pub mod ripgrep;
-pub mod astgrep;
 pub mod tabs;
 pub mod tui;
 pub mod ui;

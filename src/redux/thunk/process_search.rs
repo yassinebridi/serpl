@@ -68,7 +68,12 @@ where
                 line_number: result.range.start.line,
                 lines: Some(RipgrepLines { text: result.lines }),
                 absolute_offset: result.range.byte_offset.start,
-                submatches: vec![SubMatch { start: result.range.start.column, end: result.range.end.column }],
+                submatches: vec![SubMatch {
+                  start: result.range.start.column,
+                  end: result.range.end.column,
+                  line_start: result.range.start.line,
+                  line_end: result.range.end.line,
+                }],
                 replacement: result.replacement,
                 context_before: Vec::new(),
                 context_after: Vec::new(),
@@ -81,7 +86,7 @@ where
         let search_list_state = SearchListState {
           list: search_results.clone(),
           metadata: Metadata {
-            elapsed_time: 0, // You might want to measure this
+            elapsed_time: 0,
             matched_lines: search_results.clone().len(),
             matches: search_results.len(),
             searches: 1,
@@ -142,7 +147,7 @@ where
                       .submatches
                       .unwrap_or_default()
                       .into_iter()
-                      .map(|sm| SubMatch { start: sm.start as usize, end: sm.end as usize })
+                      .map(|sm| SubMatch { start: sm.start as usize, end: sm.end as usize, line_start: 0, line_end: 0 })
                       .collect();
 
                     let mut context_before: Vec<String> = context_buffer.drain(..).map(|(_, line)| line).collect();
