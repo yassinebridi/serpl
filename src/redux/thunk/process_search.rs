@@ -1,5 +1,6 @@
 use std::{
   collections::{HashMap, HashSet, VecDeque},
+  fs,
   process::Command,
   sync::Arc,
 };
@@ -25,6 +26,29 @@ pub struct ProcessSearchThunk {}
 impl ProcessSearchThunk {
   pub fn new() -> Self {
     Self {}
+  }
+
+  fn get_context(lines: &[&str], start: usize, count: usize, forward: bool) -> Vec<String> {
+    let mut context = Vec::new();
+    let mut current = start;
+
+    for _ in 0..count {
+      if forward {
+        if current >= lines.len() {
+          break;
+        }
+        context.push(lines[current].to_string());
+        current += 1;
+      } else {
+        if current == 0 {
+          break;
+        }
+        current -= 1;
+        context.insert(0, lines[current].to_string());
+      }
+    }
+
+    context
   }
 }
 
@@ -54,41 +78,51 @@ where
           args.push(&replace_text);
         }
         let output = Command::new("sg").args(args).output().expect("Failed to execute ast-grep");
-
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
 
-        let search_results: Vec<SearchResultState> = ast_grep_results
-          .into_iter()
-          .map(|result| {
-            SearchResultState {
-              index: None,
-              path: result.file,
-              matches: vec![Match {
-                line_number: result.range.start.line,
-                lines: Some(RipgrepLines { text: result.lines }),
-                absolute_offset: result.range.byte_offset.start,
-                submatches: vec![SubMatch {
-                  start: result.range.start.column,
-                  end: result.range.end.column,
-                  line_start: result.range.start.line,
-                  line_end: result.range.end.line,
-                }],
-                replacement: result.replacement,
-                context_before: Vec::new(),
-                context_after: Vec::new(),
+        let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
+        let mut aggregated_results: HashMap<String, SearchResultState> = HashMap::new();
+        for result in ast_grep_results {
+          let file_content = fs::read_to_string(&result.file).unwrap_or_default();
+          let lines: Vec<&str> = file_content.lines().collect();
+
+          let context_before = Self::get_context(&lines, result.range.start.line, 3, false);
+          let context_after = Self::get_context(&lines, result.range.end.line, 3, true);
+
+          aggregated_results
+            .entry(result.file.clone())
+            .or_insert_with(|| {
+              SearchResultState { index: None, path: result.file.clone(), matches: Vec::new(), total_matches: 0 }
+            })
+            .matches
+            .push(Match {
+              line_number: result.range.start.line,
+              lines: Some(RipgrepLines { text: result.lines }),
+              absolute_offset: result.range.byte_offset.start,
+              submatches: vec![SubMatch {
+                start: result.range.start.column,
+                end: result.range.end.column,
+                line_start: result.range.start.line,
+                line_end: result.range.end.line,
               }],
-              total_matches: 1,
-            }
-          })
-          .collect();
+              replacement: result.replacement,
+              context_before,
+              context_after,
+            });
+        }
+
+        let mut search_results: Vec<SearchResultState> = aggregated_results.into_values().collect();
+        for (index, result) in search_results.iter_mut().enumerate() {
+          result.index = Some(index);
+          result.total_matches = result.matches.len();
+        }
 
         let search_list_state = SearchListState {
           list: search_results.clone(),
           metadata: Metadata {
             elapsed_time: 0,
-            matched_lines: search_results.clone().len(),
-            matches: search_results.len(),
+            matched_lines: search_results.iter().map(|r| r.total_matches).sum(),
+            matches: search_results.iter().map(|r| r.total_matches).sum(),
             searches: 1,
             searches_with_match: if search_results.is_empty() { 0 } else { 1 },
           },
