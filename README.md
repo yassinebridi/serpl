@@ -50,7 +50,7 @@ https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a
   ```
   - If you want to install the application with the AST Grep functionality, you can use the following command:
     ```bash
-    cargo install serpl --features ast-grep
+    cargo install serpl --features ast_grep
     ```
 2. Run the application:
   ```bash
