@@ -22,38 +22,33 @@ impl RemoveLineFromFileThunk {
   }
 }
 
-impl Default for RemoveLineFromFileThunk {
-  fn default() -> Self {
-    Self::new(0, 0)
-  }
-}
-
 #[async_trait]
 impl<Api> Thunk<State, Action, Api> for RemoveLineFromFileThunk
 where
   Api: StoreApi<State, Action> + Send + Sync + 'static,
 {
   async fn execute(&self, store: Arc<Api>) {
-    // Get the current state
-    let search_list = store.select(|state: &State| state.search_result.clone()).await;
+    let mut search_list = store.select(|state: &State| state.search_result.clone()).await;
 
-    // Ensure the indices are within bounds
     if self.file_index < search_list.list.len() {
-      let mut updated_list = search_list.list.clone();
-      if self.line_index < updated_list[self.file_index].matches.len() {
-        updated_list[self.file_index].matches.remove(self.line_index);
+      let file_result = &mut search_list.list[self.file_index];
+      if self.line_index < file_result.matches.len() {
+        file_result.matches.remove(self.line_index);
+        file_result.total_matches -= 1;
 
-        // Update total_matches
-        updated_list[self.file_index].total_matches -= 1;
+        if file_result.matches.is_empty() {
+          search_list.list.remove(self.file_index);
+        }
 
-        // Update the state with the new list
-        let updated_search_list = SearchListState { list: updated_list.clone(), ..search_list };
-        store.dispatch(Action::SetSearchList { search_list: updated_search_list }).await;
+        store.dispatch(Action::SetSearchList { search_list: search_list.clone() }).await;
 
-        // Update the selected result to None or the next available item
-        let new_selected_result =
-          if updated_list.is_empty() { SearchResultState::default() } else { updated_list[self.file_index].clone() };
-        store.dispatch(Action::SetSelectedResult { result: new_selected_result }).await;
+        if !search_list.list.is_empty() {
+          let new_selected_index = self.file_index.min(search_list.list.len() - 1);
+          let new_selected_result = search_list.list[new_selected_index].clone();
+          store.dispatch(Action::SetSelectedResult { result: new_selected_result }).await;
+        } else {
+          store.dispatch(Action::SetSelectedResult { result: SearchResultState::default() }).await;
+        }
       }
     }
   }

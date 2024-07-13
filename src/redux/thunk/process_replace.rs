@@ -1,4 +1,4 @@
-use std::{fs, io::Write, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashSet, fs, io::Write, path::PathBuf, process::Command, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
@@ -8,10 +8,12 @@ use redux_rs::{
   StoreApi,
 };
 use regex::RegexBuilder;
+use serde_json::from_str;
 use tokio::sync::mpsc::UnboundedSender;
 
 use crate::{
   action::{AppAction, TuiAction},
+  astgrep::AstGrepOutput,
   components::notifications::NotificationEnum,
   redux::{
     action::Action,
@@ -31,7 +33,42 @@ impl ProcessReplaceThunk {
     Self { command_tx, force_replace }
   }
 
-  async fn handle_confirm(&self, store: Arc<impl StoreApi<State, Action>>) {
+  async fn process_ast_grep_replace(&self, store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>) {
+    let search_list = store.select(|state: &State| state.search_result.clone()).await;
+    let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
+    let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
+
+    for search_result in &search_list.list {
+      let file_path = &search_result.path;
+
+      let mut content = fs::read_to_string(file_path).expect("Unable to read file");
+      let lines: Vec<&str> = content.lines().collect();
+
+      let lines_to_replace: HashSet<usize> = search_result.matches.iter().map(|m| m.line_number).collect();
+
+      let output = Command::new("ast-grep")
+        .args(["run", "-p", &search_text_state.text, "-r", &replace_text_state.text, "--json=compact", file_path])
+        .output()
+        .expect("Failed to execute ast-grep for replacement");
+
+      let stdout = String::from_utf8_lossy(&output.stdout);
+      let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
+
+      for result in ast_grep_results.iter().rev() {
+        if let (Some(replacement), Some(offsets)) = (&result.replacement, &result.replacement_offsets) {
+          if lines_to_replace.contains(&result.range.start.line) {
+            let start = offsets.start;
+            let end = offsets.end;
+            content.replace_range(start..end, replacement);
+          }
+        }
+      }
+
+      fs::write(file_path, content).expect("Unable to write file");
+    }
+  }
+
+  async fn process_normal_replace(&self, store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>) {
     let search_list = store.select(|state: &State| state.search_result.clone()).await;
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
@@ -67,6 +104,8 @@ impl ProcessReplaceThunk {
           .build()
           .expect("Invalid regex")
       },
+      #[cfg(feature = "ast_grep")]
+      SearchTextKind::AstGrep => panic!(),
     };
 
     for search_result in &search_list.list {
@@ -106,6 +145,8 @@ impl ProcessReplaceThunk {
                 }
               },
               ReplaceTextKind::Simple => replace_text_state.text.to_string(),
+              #[cfg(feature = "ast_grep")]
+              ReplaceTextKind::AstGrep => panic!(),
             }
           })
           .to_string();
@@ -120,6 +161,22 @@ impl ProcessReplaceThunk {
       let mut file = fs::OpenOptions::new().write(true).truncate(true).open(file_path).expect("Unable to open file");
       file.write_all(new_content.as_bytes()).expect("Unable to write file");
     }
+  }
+
+  async fn handle_confirm<Api: StoreApi<State, Action> + Send + Sync + 'static>(&self, store: Arc<Api>) {
+    let search_list = store.select(|state: &State| state.search_result.clone()).await;
+    let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
+    let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
+
+    #[cfg(feature = "ast_grep")]
+    if search_text_state.kind == SearchTextKind::AstGrep {
+      self.process_ast_grep_replace(&store).await;
+    } else {
+      self.process_normal_replace(&store).await;
+    }
+
+    #[cfg(not(feature = "ast_grep"))]
+    self.process_normal_replace(&store).await;
 
     store.dispatch(Action::ResetState).await;
     let reset_action = AppAction::Tui(TuiAction::Reset);
@@ -150,7 +207,7 @@ where
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     if force_replace {
-      self.handle_confirm(store.clone()).await;
+      self.handle_confirm(store).await;
     } else if search_text_state.text.is_empty() {
       let search_text_action =
         AppAction::Tui(TuiAction::Notify(NotificationEnum::Error("Search text cannot be empty".to_string())));

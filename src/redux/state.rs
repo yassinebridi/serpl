@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use std::{
   collections::{HashMap, HashSet},
   path::PathBuf,
@@ -45,7 +46,7 @@ pub struct SearchTextState {
   pub kind: SearchTextKind,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq, Copy)]
 pub enum SearchTextKind {
   #[default]
   Simple,
@@ -53,6 +54,8 @@ pub enum SearchTextKind {
   MatchWholeWord,
   MatchCaseWholeWord,
   Regex,
+  #[cfg(feature = "ast_grep")]
+  AstGrep,
 }
 
 #[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
@@ -61,11 +64,13 @@ pub struct ReplaceTextState {
   pub kind: ReplaceTextKind,
 }
 
-#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq)]
+#[derive(Default, Deserialize, Serialize, Debug, Clone, PartialEq, Copy)]
 pub enum ReplaceTextKind {
   #[default]
   Simple,
   PreserveCase,
+  #[cfg(feature = "ast_grep")]
+  AstGrep,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -135,12 +140,15 @@ pub struct Match {
   pub context_after: Vec<String>,
   pub absolute_offset: usize,
   pub submatches: Vec<SubMatch>,
+  pub replacement: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 pub struct SubMatch {
   pub start: usize,
   pub end: usize,
+  pub line_start: usize,
+  pub line_end: usize,
 }
 
 impl State {

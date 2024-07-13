@@ -5,7 +5,7 @@ use std::{
   time::Duration,
 };
 
-use color_eyre::eyre::Result;
+use color_eyre::{eyre::Result, owo_colors::OwoColorize};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{prelude::*, symbols::scrollbar, widgets::*};
 use regex::Regex;
@@ -99,27 +99,104 @@ impl Preview {
     }
   }
 
-  fn format_match_line<'a>(&self, line: &'a str, submatches: &[SubMatch], replace_text: &'a str) -> Vec<Span<'a>> {
-    let mut spans = vec![];
-    let mut last_end = 0;
+  fn format_match_lines<'a>(
+    &self,
+    full_match: &'a str,
+    submatches: &[SubMatch],
+    replace_text: &'a String,
+    replacement: &'a Option<String>,
+    is_ast_grep: bool,
+  ) -> Vec<Line<'a>> {
+    let mut lines = Vec::new();
+    let match_lines: Vec<&str> = full_match.lines().collect();
+    let replacement_lines: Vec<&str> = replacement.as_ref().map(|r| r.lines().collect()).unwrap_or_default();
 
-    for submatch in submatches {
-      if submatch.start > last_end {
-        spans.push(Span::raw(&line[last_end..submatch.start]));
+    for (i, line) in match_lines.iter().enumerate() {
+      let line_number = submatches[0].line_start + i;
+      let mut spans = Vec::new();
+      let mut last_end = 0;
+
+      for submatch in submatches {
+        if line_number >= submatch.line_start && line_number <= submatch.line_end {
+          let start = if line_number == submatch.line_start { submatch.start } else { 0 };
+          let end = if line_number == submatch.line_end { submatch.end } else { line.len() };
+
+          if start > last_end {
+            spans.push(Span::raw(&line[last_end..start]));
+          }
+
+          let matched_text = &line[start..end];
+          if is_ast_grep {
+            let replacement_line = replacement_lines.get(i).unwrap_or(&"");
+            if replace_text.is_empty() {
+              spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
+            } else {
+              let (common_prefix, common_suffix) = Self::find_common_parts(matched_text, replacement_line);
+
+              spans.push(Span::raw(common_prefix));
+
+              let search_diff = &matched_text[common_prefix.len()..matched_text.len() - common_suffix.len()];
+              if !search_diff.trim().is_empty() {
+                spans.push(Span::styled(
+                  search_diff,
+                  Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
+                ));
+              }
+
+              let replace_diff = &replacement_line[common_prefix.len()..replacement_line.len() - common_suffix.len()];
+              if !replace_diff.trim().is_empty() {
+                spans.push(Span::styled(replace_diff, Style::default().fg(Color::White).bg(Color::Green)));
+              }
+
+              spans.push(Span::raw(common_suffix));
+            }
+          } else if replace_text.is_empty() {
+            spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
+          } else {
+            spans.push(Span::styled(
+              matched_text,
+              Style::default().fg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
+            ));
+            spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+          }
+
+          last_end = end;
+        }
       }
 
-      let matched_text = &line[submatch.start..submatch.end];
-      spans.push(Span::styled(matched_text, Style::default().bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT)));
-      spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+      if last_end < line.len() {
+        spans.push(Span::raw(&line[last_end..]));
+      }
 
-      last_end = submatch.end;
+      lines.push(Line::from(spans));
     }
 
-    if last_end < line.len() {
-      spans.push(Span::raw(&line[last_end..]));
+    lines
+  }
+
+  fn find_common_parts<'a>(s1: &'a str, s2: &'a str) -> (&'a str, &'a str) {
+    let mut prefix_len = 0;
+    for (c1, c2) in s1.chars().zip(s2.chars()) {
+      if c1 == c2 {
+        prefix_len += 1;
+      } else {
+        break;
+      }
     }
 
-    spans
+    let mut suffix_len = 0;
+    for (c1, c2) in s1.chars().rev().zip(s2.chars().rev()) {
+      if c1 == c2 && suffix_len < s1.len() - prefix_len && suffix_len < s2.len() - prefix_len {
+        suffix_len += 1;
+      } else {
+        break;
+      }
+    }
+
+    let common_prefix = &s1[..prefix_len];
+    let common_suffix = &s1[s1.len() - suffix_len..];
+
+    (common_prefix, common_suffix)
   }
 }
 
@@ -190,22 +267,13 @@ impl Component for Preview {
     let mut lines = vec![];
     self.non_divider_lines.clear();
 
-    lines.push(Line::from("-".repeat(area.width as usize)).fg(Color::DarkGray));
-
     for (match_index, result) in state.selected_result.matches.iter().enumerate() {
       let line_number = result.line_number;
       let start_index = lines.len();
-      let is_selected = self.lines_state.selected().map(|s| s >= start_index && s < start_index + 6).unwrap_or(false);
-
-      if is_selected {
-        if let Some(last_line) = lines.last_mut() {
-          *last_line = Line::from("-".repeat(area.width as usize)).fg(Color::Yellow);
-        }
-      }
+      let is_selected = self.lines_state.selected().map(|s| s >= start_index).unwrap_or(false);
 
       for (i, line) in result.context_before.iter().enumerate() {
-        let line_style =
-          if is_selected { Style::default().fg(Color::White) } else { Style::default().fg(Color::DarkGray) };
+        let line_style = Style::default().fg(Color::DarkGray);
         let context_line_number = line_number.saturating_sub(result.context_before.len() - i);
         let spans = vec![
           Span::styled(format!("{:4} ", context_line_number), Style::default().fg(Color::Blue)),
@@ -214,18 +282,29 @@ impl Component for Preview {
         lines.push(Line::from(spans));
       }
 
-      let match_line = result.lines.as_ref().unwrap().text.as_str();
-      let formatted_line = self.format_match_line(match_line, &result.submatches, &state.replace_text.text);
-      let mut spans = vec![Span::styled(format!("{:4} ", line_number), Style::default().fg(Color::Blue))];
-      spans.extend(formatted_line);
-      self.non_divider_lines.push(lines.len());
-      lines.push(Line::from(spans));
+      #[cfg(feature = "ast_grep")]
+      let is_ast_grep = matches!(state.search_text.kind, SearchTextKind::AstGrep);
+      #[cfg(not(feature = "ast_grep"))]
+      let is_ast_grep = false;
+
+      let formatted_lines = self.format_match_lines(
+        &result.lines.as_ref().unwrap().text,
+        &result.submatches,
+        &state.replace_text.text,
+        &result.replacement,
+        is_ast_grep,
+      );
+      for (i, formatted_line) in formatted_lines.clone().into_iter().enumerate() {
+        let mut spans = vec![Span::styled(format!("{:4} ", line_number + i), Style::default().fg(Color::LightGreen))];
+        spans.extend(formatted_line.spans);
+        self.non_divider_lines.push(lines.len());
+        lines.push(Line::from(spans));
+      }
 
       for (i, line) in result.context_after.iter().enumerate() {
-        let line_style =
-          if is_selected { Style::default().fg(Color::White) } else { Style::default().fg(Color::DarkGray) };
+        let line_style = Style::default().fg(Color::DarkGray);
         let spans = vec![
-          Span::styled(format!("{:4} ", line_number + i + 1), Style::default().fg(Color::Blue)),
+          Span::styled(format!("{:4} ", line_number + formatted_lines.len() + i), Style::default().fg(Color::Blue)),
           Span::styled(line, line_style),
         ];
         lines.push(Line::from(spans));

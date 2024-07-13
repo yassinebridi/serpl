@@ -24,7 +24,7 @@ use crate::{
   layout::get_layout,
   redux::{
     action::Action,
-    state::{FocusedScreen, SearchResultState, SearchTextKind, State},
+    state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State},
     thunk::ThunkAction,
   },
   ripgrep::RipgrepOutput,
@@ -80,6 +80,13 @@ impl Search {
   fn change_kind(&mut self, search_text_kind: SearchTextKind, state: &State) {
     let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: search_text_kind });
     self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
+
+    #[cfg(feature = "ast_grep")]
+    if search_text_kind == SearchTextKind::AstGrep {
+      let replace_text_action = AppAction::Action(Action::SetReplaceTextKind { kind: ReplaceTextKind::AstGrep });
+      self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
+    }
+
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
     self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
     self.set_selected_result(state);
@@ -97,6 +104,16 @@ impl Component for Search {
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+          #[cfg(feature = "ast_grep")]
+          let search_text_kind = match state.search_text.kind {
+            SearchTextKind::Simple => SearchTextKind::MatchCase,
+            SearchTextKind::MatchCase => SearchTextKind::MatchWholeWord,
+            SearchTextKind::MatchWholeWord => SearchTextKind::MatchCaseWholeWord,
+            SearchTextKind::MatchCaseWholeWord => SearchTextKind::Regex,
+            SearchTextKind::Regex => SearchTextKind::AstGrep,
+            SearchTextKind::AstGrep => SearchTextKind::Simple,
+          };
+          #[cfg(not(feature = "ast_grep"))]
           let search_text_kind = match state.search_text.kind {
             SearchTextKind::Simple => SearchTextKind::MatchCase,
             SearchTextKind::MatchCase => SearchTextKind::MatchWholeWord,
@@ -153,12 +170,15 @@ impl Component for Search {
 
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
+
     let search_kind = match state.search_text.kind {
       SearchTextKind::Simple => "[Simple]",
       SearchTextKind::MatchCase => "[Match Case]",
       SearchTextKind::MatchWholeWord => "[Match Whole Word]",
       SearchTextKind::Regex => "[Regex]",
       SearchTextKind::MatchCaseWholeWord => "[Match Case Whole Word]",
+      #[cfg(feature = "ast_grep")]
+      SearchTextKind::AstGrep => "[AST Grep]",
     };
 
     let block = Block::bordered()
