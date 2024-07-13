@@ -246,7 +246,6 @@ impl Component for SearchResult {
       .iter()
       .map(|s| {
         let text = Line::from(vec![
-          // Display the relative path
           Span::raw(s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path)),
           Span::raw(" ("),
           Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)),

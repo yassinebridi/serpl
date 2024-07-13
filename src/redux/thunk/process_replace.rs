@@ -1,4 +1,4 @@
-use std::{fs, io::Write, path::PathBuf, process::Command, sync::Arc, time::Duration};
+use std::{collections::HashSet, fs, io::Write, path::PathBuf, process::Command, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
@@ -42,36 +42,29 @@ impl ProcessReplaceThunk {
       for search_result in &search_list.list {
         let file_path = &search_result.path;
 
+        let mut content = fs::read_to_string(file_path).expect("Unable to read file");
+        let lines: Vec<&str> = content.lines().collect();
+
+        let lines_to_replace: HashSet<usize> = search_result.matches.iter().map(|m| m.line_number).collect();
+
         let output = Command::new("sg")
-          .args([
-            "run",
-            "-p",
-            &search_text_state.text,
-            "-r",
-            &replace_text_state.text,
-            "--json=compact",
-            file_path,
-            "--update-all",
-          ])
+          .args(["run", "-p", &search_text_state.text, "-r", &replace_text_state.text, "--json=compact", file_path])
           .output()
           .expect("Failed to execute ast-grep for replacement");
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
 
-        // Read the original file content
-        let mut content = fs::read_to_string(file_path).expect("Unable to read file");
-
-        // Apply replacements in reverse order to maintain correct offsets
         for result in ast_grep_results.iter().rev() {
           if let (Some(replacement), Some(offsets)) = (&result.replacement, &result.replacement_offsets) {
-            let start = offsets.start;
-            let end = offsets.end;
-            content.replace_range(start..end, replacement);
+            if lines_to_replace.contains(&result.range.start.line) {
+              let start = offsets.start;
+              let end = offsets.end;
+              content.replace_range(start..end, replacement);
+            }
           }
         }
 
-        // Write the modified content back to the file
         fs::write(file_path, content).expect("Unable to write file");
       }
     } else {
