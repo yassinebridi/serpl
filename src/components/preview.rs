@@ -282,7 +282,11 @@ impl Component for Preview {
         lines.push(Line::from(spans));
       }
 
+      #[cfg(feature = "ast_grep")]
       let is_ast_grep = matches!(state.search_text.kind, SearchTextKind::AstGrep);
+      #[cfg(not(feature = "ast_grep"))]
+      let is_ast_grep = false;
+
       let formatted_lines = self.format_match_lines(
         &result.lines.as_ref().unwrap().text,
         &result.submatches,

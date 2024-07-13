@@ -2,7 +2,7 @@
 
 `serpl` is a terminal user interface (TUI) application that allows users to search and replace keywords in an entire folder, similar to the functionality available in VS Code.
 
-https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff14a5d44453
+https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a9a-849c-bd4aa4e24afc
 
 ## Table of Contents
 
@@ -29,8 +29,8 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
 
 ## Features
 
-- Search for keywords across an entire project folder.
-- Replace keywords with options for preserving case.
+- Search for keywords across an entire project folder, with options for case sensitivity, AST Grep and more.
+- Replace keywords with options for preserving case, AST Grep and more.
 - Interactive preview of search results.
 - Keyboard navigation for efficient workflow.
 - Configurable key bindings and search modes.
@@ -39,8 +39,8 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
 
 ### Prerequisites
 
-- [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) installed on your system.
 - [ripgrep](https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation) installed on your system.
+- (Optional) [ast-grep](https://ast-grep.github.io) installed on your system, if you want to use the AST Grep functionality.
 
 ### Steps
 
@@ -48,11 +48,11 @@ https://github.com/yassinebridi/serpl/assets/18403595/c63627da-7984-4e5f-b1e2-ff
   ```bash
   cargo install serpl
   ```
-2. Update the application using Cargo:
-  ```bash
-  cargo install serpl
-  ```
-3. Run the application:
+  - If you want to install the application with the AST Grep functionality, you can use the following command:
+    ```bash
+    cargo install serpl --features ast-grep
+    ```
+2. Run the application:
   ```bash
   serpl
   ```
@@ -214,7 +214,7 @@ You can customize the key bindings by modifying the configuration file in the fo
 ### Search Input
 
 - Input field for entering search keywords.
-- Toggle search modes (Simple, Match Case, Whole Word, Regex).
+- Toggle search modes (Simple, Match Case, Whole Word, Regex, AST Grep).
  
 > [!TIP] 
 > If current directory is considerebly large, you have to click `Enter` to start the search.
@@ -222,7 +222,7 @@ You can customize the key bindings by modifying the configuration file in the fo
 ### Replace Input
 
 - Input field for entering replacement text.
-- Toggle replace modes (Simple, Preserve Case).
+- Toggle replace modes (Simple, Preserve Case, AST Grep).
 
 ### Search Results Pane
 
@@ -232,10 +232,9 @@ You can customize the key bindings by modifying the configuration file in the fo
 
 ### Preview Pane
 
-- Display of the selected file with highlighted search results.
+- Display of the selected file with highlighted search results, and context.
 - Navigation to view different matches within the file.
 - Option to delete individual lines containing matches.
-
  
 ## Neovim Integration using toggleterm
 
@@ -313,6 +312,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgements
 - This project was inspired by the [VS Code](https://code.visualstudio.com/) search and replace functionality.
 - This project is built using the awesome [ratatui.rs](https://ratatui.rs) library, and build on top of their [Component Template](https://ratatui.rs/templates/component).
+- Thanks to the [ripgrep](https://github.com/BurntSushi/ripgrep) project for providing the search functionality.
+- Thanks to the [ast-grep](https://ast-grep.github.io) project for providing the AST Grep functionality.
 
 ## Similar Projects
 - [repgrep](https://github.com/acheronfail/repgrep): An interactive replacer for ripgrep that makes it easy to find and replace across files on the command line.

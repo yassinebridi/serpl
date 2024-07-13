@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use std::{
   collections::{HashMap, HashSet},
   path::PathBuf,
@@ -53,6 +54,7 @@ pub enum SearchTextKind {
   MatchWholeWord,
   MatchCaseWholeWord,
   Regex,
+  #[cfg(feature = "ast_grep")]
   AstGrep,
 }
 
@@ -67,6 +69,7 @@ pub enum ReplaceTextKind {
   #[default]
   Simple,
   PreserveCase,
+  #[cfg(feature = "ast_grep")]
   AstGrep,
 }
 

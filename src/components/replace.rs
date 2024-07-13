@@ -42,6 +42,8 @@ impl Replace {
     let query = self.input.value();
     let replace_text_action = AppAction::Action(Action::SetReplaceText { text: query.to_string() });
     self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
+
+    #[cfg(feature = "ast_grep")]
     if state.replace_text.kind == ReplaceTextKind::AstGrep {
       let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
       self.command_tx.as_ref().unwrap().send(process_search_thunk).unwrap();
@@ -52,6 +54,7 @@ impl Replace {
     let replace_text_action = AppAction::Action(Action::SetReplaceTextKind { kind: replace_text_kind });
     self.command_tx.as_ref().unwrap().send(replace_text_action).unwrap();
 
+    #[cfg(feature = "ast_grep")]
     if replace_text_kind == ReplaceTextKind::AstGrep {
       let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: SearchTextKind::AstGrep });
       self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
@@ -73,10 +76,16 @@ impl Component for Replace {
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+          #[cfg(feature = "ast_grep")]
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
             ReplaceTextKind::PreserveCase => ReplaceTextKind::AstGrep,
             ReplaceTextKind::AstGrep => ReplaceTextKind::Simple,
+          };
+          #[cfg(not(feature = "ast_grep"))]
+          let replace_text_kind = match state.replace_text.kind {
+            ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
+            ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
           };
           self.change_kind(replace_text_kind);
           Ok(None)
@@ -106,10 +115,16 @@ impl Component for Replace {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
 
+    #[cfg(feature = "ast_grep")]
     let replace_kind = match state.replace_text.kind {
       ReplaceTextKind::Simple => "[Simple]",
       ReplaceTextKind::PreserveCase => "[Preserve Case]",
       ReplaceTextKind::AstGrep => "[AST Grep]",
+    };
+    #[cfg(not(feature = "ast_grep"))]
+    let replace_kind = match state.replace_text.kind {
+      ReplaceTextKind::Simple => "[Simple]",
+      ReplaceTextKind::PreserveCase => "[Preserve Case]",
     };
 
     let block = Block::bordered()
