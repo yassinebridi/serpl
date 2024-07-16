@@ -141,6 +141,34 @@ pub fn reducer(state: State, action: Action) -> State {
       }
       State { search_result: new_search_result, ..state }
     },
+
+    Action::RemoveLineFromFile { file_index, line_index } => {
+      let mut new_search_result = state.search_result.clone();
+      if file_index < new_search_result.list.len() {
+        let file_result = &mut new_search_result.list[file_index];
+        if line_index < file_result.matches.len() {
+          file_result.matches.remove(line_index);
+          file_result.total_matches -= 1;
+
+          if file_result.matches.is_empty() {
+            new_search_result.list.remove(file_index);
+          }
+
+          let new_selected_result = if !new_search_result.list.is_empty() {
+            let new_selected_index = file_index.min(new_search_result.list.len() - 1);
+            new_search_result.list[new_selected_index].clone()
+          } else {
+            SearchResultState::default()
+          };
+
+          State { search_result: new_search_result, selected_result: new_selected_result, ..state }
+        } else {
+          state
+        }
+      } else {
+        state
+      }
+    },
   }
 }
 

@@ -6,9 +6,10 @@ use tokio::sync::mpsc::UnboundedSender;
 use super::{action::Action, state::State};
 use crate::action::{AppAction, TuiAction};
 
+pub mod process_line_replace;
 pub mod process_replace;
-pub mod process_single_file_replace;
 pub mod process_search;
+pub mod process_single_file_replace;
 pub mod remove_file_from_list;
 pub mod remove_line_from_file;
 
@@ -19,6 +20,7 @@ pub enum ThunkAction {
   RemoveFileFromList(usize),
   RemoveLineFromFile(usize, usize),
   ProcessSingleFileReplace(usize),
+  ProcessLineReplace(usize, usize),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +40,9 @@ where
     },
     ThunkAction::ProcessSingleFileReplace(index) => {
       Box::new(process_single_file_replace::ProcessSingleFileReplaceThunk::new(command_tx, index))
+    },
+    ThunkAction::ProcessLineReplace(file_index, line_index) => {
+      Box::new(process_line_replace::ProcessLineReplaceThunk::new(command_tx, file_index, line_index))
     },
     ThunkAction::RemoveFileFromList(index) => Box::new(remove_file_from_list::RemoveFileFromListThunk::new(index)),
     ThunkAction::RemoveLineFromFile(file_index, line_index) => {

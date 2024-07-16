@@ -31,4 +31,5 @@ pub enum Action {
   SetDialog { dialog: Option<Dialog> },
   SetFocusedScreen { screen: Option<FocusedScreen> },
   RemoveFileFromList { index: usize },
+  RemoveLineFromFile { file_index: usize, line_index: usize },
 }

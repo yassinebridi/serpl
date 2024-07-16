@@ -99,6 +99,15 @@ impl Preview {
     }
   }
 
+  fn replace_selected_line(&mut self, selected_result_state: &SearchResultState) {
+    if let Some(selected_index) = self.lines_state.selected() {
+      let line_index = self.non_divider_lines.iter().position(|&index| index == selected_index).unwrap_or(0);
+      let file_index = selected_result_state.index.unwrap_or(0);
+      let replace_line_thunk = AppAction::Thunk(ThunkAction::ProcessLineReplace(file_index, line_index));
+      self.command_tx.as_ref().unwrap().send(replace_line_thunk).unwrap();
+    }
+  }
+
   fn format_match_lines<'a>(
     &self,
     full_match: &'a str,
@@ -233,6 +242,10 @@ impl Component for Preview {
         },
         (KeyCode::Char('k') | KeyCode::Up, _) => {
           self.previous();
+          Ok(None)
+        },
+        (KeyCode::Char('r'), _) => {
+          self.replace_selected_line(&state.selected_result);
           Ok(None)
         },
         (KeyCode::Enter, _) | (KeyCode::Esc, _) => {
