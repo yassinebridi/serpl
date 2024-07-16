@@ -30,4 +30,5 @@ pub enum Action {
   SetNotification { message: String, show: bool, ttl: u64, color: Color },
   SetDialog { dialog: Option<Dialog> },
   SetFocusedScreen { screen: Option<FocusedScreen> },
+  RemoveFileFromList { index: usize },
 }

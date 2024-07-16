@@ -134,6 +134,13 @@ pub fn reducer(state: State, action: Action) -> State {
         ..state
       }
     },
+    Action::RemoveFileFromList { index } => {
+      let mut new_search_result = state.search_result.clone();
+      if index < new_search_result.list.len() {
+        new_search_result.list.remove(index);
+      }
+      State { search_result: new_search_result, ..state }
+    },
   }
 }
 
