@@ -20,7 +20,8 @@ use crate::{
   redux::{
     action::Action,
     state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State, SubMatch},
-    thunk::ThunkAction, utils::{apply_replace, get_search_regex},
+    thunk::ThunkAction,
+    utils::{apply_replace, get_search_regex},
   },
   tabs::Tab,
 };
