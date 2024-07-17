@@ -58,6 +58,9 @@ impl Replace {
     if replace_text_kind == ReplaceTextKind::AstGrep {
       let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: SearchTextKind::AstGrep });
       self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
+    } else if replace_text_kind != ReplaceTextKind::AstGrep {
+      let search_text_action = AppAction::Action(Action::SetSearchTextKind { kind: SearchTextKind::Simple });
+      self.command_tx.as_ref().unwrap().send(search_text_action).unwrap();
     }
 
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);

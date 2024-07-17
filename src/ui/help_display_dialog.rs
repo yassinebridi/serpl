@@ -58,7 +58,7 @@ impl StatefulWidget for HelpDisplayDialogWidget {
     let text = self.tabs[self.active_tab].content.clone();
 
     let width = 80;
-    let height = 10;
+    let height = 15;
 
     let lines = Text::from(text);
     let text_widget = Paragraph::new(lines)

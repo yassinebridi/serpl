@@ -14,6 +14,7 @@ use crate::{
     action::Action,
     state::{Match, ReplaceTextKind, ReplaceTextState, SearchTextKind, SearchTextState, State},
     thunk::ThunkAction,
+    utils::{apply_replace, get_search_regex},
   },
 };
 
@@ -97,55 +98,12 @@ fn process_normal_replace(
   let content = fs::read_to_string(file_path).expect("Unable to read file");
   let mut lines: Vec<String> = content.lines().map(String::from).collect();
 
-  let re = match search_text_state.kind {
-    SearchTextKind::Regex => {
-      RegexBuilder::new(&search_text_state.text).case_insensitive(true).build().expect("Invalid regex")
-    },
-    SearchTextKind::MatchCase => {
-      RegexBuilder::new(&regex::escape(&search_text_state.text)).case_insensitive(false).build().expect("Invalid regex")
-    },
-    SearchTextKind::MatchWholeWord => {
-      RegexBuilder::new(&format!(r"\\b{}\\b", regex::escape(&search_text_state.text)))
-        .case_insensitive(true)
-        .build()
-        .expect("Invalid regex")
-    },
-    SearchTextKind::MatchCaseWholeWord => {
-      RegexBuilder::new(&format!(r"\\b{}\\b", regex::escape(&search_text_state.text)))
-        .case_insensitive(false)
-        .build()
-        .expect("Invalid regex")
-    },
-    SearchTextKind::Simple => {
-      RegexBuilder::new(&regex::escape(&search_text_state.text)).case_insensitive(true).build().expect("Invalid regex")
-    },
-    #[cfg(feature = "ast_grep")]
-    SearchTextKind::AstGrep => unreachable!(),
-  };
+  let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
 
   if let Some(line) = lines.get_mut(match_info.line_number - 1) {
     let replaced_line = re.replace_all(line, |caps: &regex::Captures| {
       let matched_text = caps.get(0).unwrap().as_str();
-      match replace_text_state.kind {
-        ReplaceTextKind::PreserveCase => {
-          let first_char = matched_text.chars().next().unwrap_or_default();
-          if matched_text.chars().all(char::is_uppercase) {
-            replace_text_state.text.to_uppercase()
-          } else if first_char.is_uppercase() {
-            replace_text_state
-              .text
-              .chars()
-              .enumerate()
-              .map(|(i, rc)| if i == 0 { rc.to_uppercase().to_string() } else { rc.to_lowercase().to_string() })
-              .collect::<String>()
-          } else {
-            replace_text_state.text.to_lowercase()
-          }
-        },
-        ReplaceTextKind::Simple => replace_text_state.text.to_string(),
-        #[cfg(feature = "ast_grep")]
-        ReplaceTextKind::AstGrep => unreachable!(),
-      }
+      apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
     });
     *line = replaced_line.into_owned();
   }
