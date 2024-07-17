@@ -19,7 +19,7 @@ use crate::{
     action::Action,
     state::{ConfirmDialogState, Dialog, DialogAction, ReplaceTextKind, SearchTextKind, State},
     thunk::{ForceReplace, ThunkAction},
-    utils::{replace_file_ast, replace_file_normal},
+    utils::{get_search_regex, replace_file_ast, replace_file_normal},
   },
   utils::is_git_repo,
 };
@@ -52,37 +52,7 @@ impl ProcessReplaceThunk {
     let processing_status_action = AppAction::Tui(TuiAction::Status("Processing search and replace..".to_string()));
     self.command_tx.send(processing_status_action).unwrap();
 
-    let re = match search_text_state.kind {
-      SearchTextKind::Regex => {
-        RegexBuilder::new(&search_text_state.text).case_insensitive(true).build().expect("Invalid regex")
-      },
-      SearchTextKind::MatchCase => {
-        RegexBuilder::new(&regex::escape(&search_text_state.text))
-          .case_insensitive(false)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::MatchWholeWord => {
-        RegexBuilder::new(&format!(r"\b{}\b", regex::escape(&search_text_state.text)))
-          .case_insensitive(true)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::MatchCaseWholeWord => {
-        RegexBuilder::new(&format!(r"\b{}\b", regex::escape(&search_text_state.text)))
-          .case_insensitive(false)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::Simple => {
-        RegexBuilder::new(&regex::escape(&search_text_state.text))
-          .case_insensitive(true)
-          .build()
-          .expect("Invalid regex")
-      },
-      #[cfg(feature = "ast_grep")]
-      SearchTextKind::AstGrep => panic!(),
-    };
+    let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
 
     for search_result in &search_list.list {
       replace_file_normal(search_result, &search_text_state, &replace_text_state);
