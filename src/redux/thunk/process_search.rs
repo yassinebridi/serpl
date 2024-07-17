@@ -127,7 +127,7 @@ impl ProcessSearchThunk {
       SearchTextKind::MatchCase => rg_args.extend(&["-s", &search_text_state.text]),
       SearchTextKind::MatchWholeWord => rg_args.extend(&["-w", "-i", &search_text_state.text]),
       SearchTextKind::MatchCaseWholeWord => rg_args.extend(&["-w", "-s", &search_text_state.text]),
-      SearchTextKind::Simple => rg_args.extend(&["-i", &search_text_state.text]),
+      SearchTextKind::Simple => rg_args.extend(&["-i", "-F", &search_text_state.text]),
       #[cfg(feature = "ast_grep")]
       SearchTextKind::AstGrep => {},
     }

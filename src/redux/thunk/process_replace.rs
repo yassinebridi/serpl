@@ -19,6 +19,7 @@ use crate::{
     action::Action,
     state::{ConfirmDialogState, Dialog, DialogAction, ReplaceTextKind, SearchTextKind, State},
     thunk::{ForceReplace, ThunkAction},
+    utils::{get_search_regex, replace_file_ast, replace_file_normal},
   },
   utils::is_git_repo,
 };
@@ -39,32 +40,7 @@ impl ProcessReplaceThunk {
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
     for search_result in &search_list.list {
-      let file_path = &search_result.path;
-
-      let mut content = fs::read_to_string(file_path).expect("Unable to read file");
-      let lines: Vec<&str> = content.lines().collect();
-
-      let lines_to_replace: HashSet<usize> = search_result.matches.iter().map(|m| m.line_number).collect();
-
-      let output = Command::new("ast-grep")
-        .args(["run", "-p", &search_text_state.text, "-r", &replace_text_state.text, "--json=compact", file_path])
-        .output()
-        .expect("Failed to execute ast-grep for replacement");
-
-      let stdout = String::from_utf8_lossy(&output.stdout);
-      let ast_grep_results: Vec<AstGrepOutput> = from_str(&stdout).expect("Failed to parse ast-grep output");
-
-      for result in ast_grep_results.iter().rev() {
-        if let (Some(replacement), Some(offsets)) = (&result.replacement, &result.replacement_offsets) {
-          if lines_to_replace.contains(&result.range.start.line) {
-            let start = offsets.start;
-            let end = offsets.end;
-            content.replace_range(start..end, replacement);
-          }
-        }
-      }
-
-      fs::write(file_path, content).expect("Unable to write file");
+      replace_file_ast(search_result, &search_text_state, &replace_text_state);
     }
   }
 
@@ -76,90 +52,10 @@ impl ProcessReplaceThunk {
     let processing_status_action = AppAction::Tui(TuiAction::Status("Processing search and replace..".to_string()));
     self.command_tx.send(processing_status_action).unwrap();
 
-    let re = match search_text_state.kind {
-      SearchTextKind::Regex => {
-        RegexBuilder::new(&search_text_state.text).case_insensitive(true).build().expect("Invalid regex")
-      },
-      SearchTextKind::MatchCase => {
-        RegexBuilder::new(&regex::escape(&search_text_state.text))
-          .case_insensitive(false)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::MatchWholeWord => {
-        RegexBuilder::new(&format!(r"\b{}\b", regex::escape(&search_text_state.text)))
-          .case_insensitive(true)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::MatchCaseWholeWord => {
-        RegexBuilder::new(&format!(r"\b{}\b", regex::escape(&search_text_state.text)))
-          .case_insensitive(false)
-          .build()
-          .expect("Invalid regex")
-      },
-      SearchTextKind::Simple => {
-        RegexBuilder::new(&regex::escape(&search_text_state.text))
-          .case_insensitive(true)
-          .build()
-          .expect("Invalid regex")
-      },
-      #[cfg(feature = "ast_grep")]
-      SearchTextKind::AstGrep => panic!(),
-    };
+    let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
 
     for search_result in &search_list.list {
-      let file_path = &search_result.path;
-
-      let content = fs::read_to_string(file_path).expect("Unable to read file");
-
-      let mut new_content = String::new();
-
-      let mut last_end = 0;
-
-      for mat in &search_result.matches {
-        let line_number = mat.line_number;
-        let line_start = content.lines().take(line_number - 1).map(|line| line.len() + 1).sum::<usize>();
-        let line_end = line_start + mat.lines.as_ref().unwrap().text.len();
-
-        new_content.push_str(&content[last_end..line_start]);
-
-        let line = mat.lines.as_ref().unwrap().text.clone();
-        let replaced_line = re
-          .replace_all(&line, |caps: &regex::Captures| {
-            let matched_text = caps.get(0).unwrap().as_str();
-            match replace_text_state.kind {
-              ReplaceTextKind::PreserveCase => {
-                let first_char = matched_text.chars().next().unwrap_or_default();
-                if matched_text.chars().all(char::is_uppercase) {
-                  replace_text_state.text.to_uppercase()
-                } else if first_char.is_uppercase() {
-                  replace_text_state
-                    .text
-                    .chars()
-                    .enumerate()
-                    .map(|(i, rc)| if i == 0 { rc.to_uppercase().to_string() } else { rc.to_lowercase().to_string() })
-                    .collect::<String>()
-                } else {
-                  replace_text_state.text.to_lowercase()
-                }
-              },
-              ReplaceTextKind::Simple => replace_text_state.text.to_string(),
-              #[cfg(feature = "ast_grep")]
-              ReplaceTextKind::AstGrep => panic!(),
-            }
-          })
-          .to_string();
-
-        new_content.push_str(&replaced_line);
-
-        last_end = line_end;
-      }
-
-      new_content.push_str(&content[last_end..]);
-
-      let mut file = fs::OpenOptions::new().write(true).truncate(true).open(file_path).expect("Unable to open file");
-      file.write_all(new_content.as_bytes()).expect("Unable to write file");
+      replace_file_normal(search_result, &search_text_state, &replace_text_state);
     }
   }
 

@@ -21,11 +21,12 @@ https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a
    - [Replace Input](#replace-input)
    - [Search Results Pane](#search-results-pane)
    - [Preview Pane](#preview-pane)
-5. [Neovim Integration using toggleterm](#neovim-integration-using-toggleterm)
-6. [License](#license)
-7. [Contributing](#contributing)
-8. [Acknowledgements](#acknowledgements)
-9. [Similar Projects](#similar-projects)
+5. [Quick Hints](#quick-hints)
+6. [Neovim Integration using toggleterm](#neovim-integration-using-toggleterm)
+7. [License](#license)
+8. [Contributing](#contributing)
+9. [Acknowledgements](#acknowledgements)
+10. [Similar Projects](#similar-projects)
 
 ## Features
 
@@ -115,24 +116,25 @@ Default key bindings can be customized through the `config.json` file.
 
 #### Default Key Bindings
 
-| Key Combination              | Action                            |
-| ---------------------------- | --------------------------------- |
-| `Ctrl + c`                   | Quit                              |
-| `Ctrl + b`                   | Help                              |
-| `Tab`                        | Switch between tabs               |
-| `Backtab`                    | Switch to previous tabs           |
-| `Ctrl + o`                   | Process replace                   |
-| `Ctrl + n`                   | Toggle search and replace modes   |
-| `Enter`                      | Execute search (for large folders)|
-| `g` / `Left` / `h`           | Go to top of the list             |
-| `G` / `Right` / `l`          | Go to bottom of the list          |
-| `j` / `Down`                 | Move to the next item             |
-| `k` / `Up`                   | Move to the previous item         |
-| `d`                          | Delete selected file or line      |
-| `Esc`                        | Exit the current pane or dialog   |
-| `Enter` (in dialogs) / `y`   | Confirm action                    |
-| `Esc` (in dialogs) / `n`     | Cancel action                     |
-| `h`, `l`, `Tab` (in dialogs) | Navigate dialog options           |
+| Key Combination              | Action                                    |
+| ---------------------------- | ----------------------------------------- |
+| `Ctrl + c`                   | Quit                                      |
+| `Ctrl + b`                   | Help                                      |
+| `Tab`                        | Switch between tabs                       |
+| `Backtab`                    | Switch to previous tabs                   |
+| `Ctrl + o`                   | Process replace for all files             |
+| `r`                          | Process replace for selected file or line |
+| `Ctrl + n`                   | Toggle search and replace modes           |
+| `Enter`                      | Execute search (for large folders)        |
+| `g` / `Left` / `h`           | Go to top of the list                     |
+| `G` / `Right` / `l`          | Go to bottom of the list                  |
+| `j` / `Down`                 | Move to the next item                     |
+| `k` / `Up`                   | Move to the previous item                 |
+| `d`                          | Delete selected file or line              |
+| `Esc`                        | Exit the current pane or dialog           |
+| `Enter` (in dialogs) / `y`   | Confirm action                            |
+| `Esc` (in dialogs) / `n`     | Cancel action                             |
+| `h`, `l`, `Tab` (in dialogs) | Navigate dialog options                   |
 
 ### Configuration
 
@@ -214,7 +216,13 @@ You can customize the key bindings by modifying the configuration file in the fo
 ### Search Input
 
 - Input field for entering search keywords.
-- Toggle search modes (Simple, Match Case, Whole Word, Regex, AST Grep).
+- Toggle search modes (Simple, Match Case, Match Whole Word, Match Case Whole Word, Regex, AST Grep).
+  - Simple: Search all occurrences of the keyword.
+  - Match Case: Search occurrences with the same case as the keyword.
+  - Match Whole Word: Search occurrences that match the keyword exactly.
+  - Match Case Whole Word: Search occurrences that match the keyword exactly with the same case.
+  - Regex: Search occurrences using a regular expression.
+  - AST Grep: Search occurrences using AST Grep.
  
 > [!TIP] 
 > If current directory is considerebly large, you have to click `Enter` to start the search.
@@ -223,6 +231,9 @@ You can customize the key bindings by modifying the configuration file in the fo
 
 - Input field for entering replacement text.
 - Toggle replace modes (Simple, Preserve Case, AST Grep).
+  - Simple: Replace all occurrences of the keyword.
+  - Preserve Case: Replace occurrences while preserving the case of the keyword.
+  - AST Grep: Replace occurrences using AST Grep.
 
 ### Search Results Pane
 
@@ -235,6 +246,14 @@ You can customize the key bindings by modifying the configuration file in the fo
 - Display of the selected file with highlighted search results, and context.
 - Navigation to view different matches within the file.
 - Option to delete individual lines containing matches.
+
+## Quick Hints
+- Use the `Ctrl + b` key combination to display the help dialog.
+- Use the `Ctrl + o` key combination to process the replace for all files.
+- Use the `r` key to process the replace for the selected file or line.
+- Use the `Ctrl + n` key combination to toggle between search and replace modes.
+- Use the `g`, `G`, `j`, and `k` keys to navigate through the search results.
+- Use the `d` key to delete the selected file or line.
  
 ## Neovim Integration using toggleterm
 

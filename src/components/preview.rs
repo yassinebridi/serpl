@@ -21,6 +21,7 @@ use crate::{
     action::Action,
     state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State, SubMatch},
     thunk::ThunkAction,
+    utils::{apply_replace, get_search_regex},
   },
   tabs::Tab,
 };
@@ -99,12 +100,25 @@ impl Preview {
     }
   }
 
+  fn replace_selected_line(&mut self, selected_result_state: &SearchResultState) {
+    if let Some(selected_index) = self.lines_state.selected() {
+      let line_index = self.non_divider_lines.iter().position(|&index| index == selected_index).unwrap_or(0);
+      let file_index = selected_result_state.index.unwrap_or(0);
+      let replace_line_thunk = AppAction::Thunk(ThunkAction::ProcessLineReplace(file_index, line_index));
+      self.command_tx.as_ref().unwrap().send(replace_line_thunk).unwrap();
+    }
+  }
+
+  // disable too_many_arguments clippy
+  #[allow(clippy::too_many_arguments)]
   fn format_match_lines<'a>(
     &self,
     full_match: &'a str,
     submatches: &[SubMatch],
-    replace_text: &'a String,
+    replace_text: &'a str,
     replacement: &'a Option<String>,
+    search_kind: &SearchTextKind,
+    replace_kind: &ReplaceTextKind,
     is_ast_grep: bool,
   ) -> Vec<Line<'a>> {
     let mut lines = Vec::new();
@@ -150,14 +164,31 @@ impl Preview {
 
               spans.push(Span::raw(common_suffix));
             }
-          } else if replace_text.is_empty() {
-            spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
           } else {
-            spans.push(Span::styled(
-              matched_text,
-              Style::default().fg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
-            ));
-            spans.push(Span::styled(replace_text, Style::default().fg(Color::White).bg(Color::Green)));
+            let re = get_search_regex(matched_text, search_kind);
+
+            for cap in re.captures_iter(line) {
+              let m = cap.get(0).unwrap();
+              let start = m.start();
+              let end = m.end();
+
+              if start > last_end {
+                spans.push(Span::raw(&line[last_end..start]));
+              }
+
+              if replace_text.is_empty() {
+                spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
+              } else {
+                let replacement = apply_replace(matched_text, replace_text, replace_kind);
+                spans.push(Span::styled(
+                  matched_text,
+                  Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
+                ));
+                spans.push(Span::styled(replacement, Style::default().fg(Color::White).bg(Color::Green)));
+              }
+
+              last_end = end;
+            }
           }
 
           last_end = end;
@@ -235,6 +266,10 @@ impl Component for Preview {
           self.previous();
           Ok(None)
         },
+        (KeyCode::Char('r'), _) => {
+          self.replace_selected_line(&state.selected_result);
+          Ok(None)
+        },
         (KeyCode::Enter, _) | (KeyCode::Esc, _) => {
           let action = AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult });
           self.command_tx.as_ref().unwrap().send(action).unwrap();
@@ -292,6 +327,8 @@ impl Component for Preview {
         &result.submatches,
         &state.replace_text.text,
         &result.replacement,
+        &state.search_text.kind,
+        &state.replace_text.kind,
         is_ast_grep,
       );
       for (i, formatted_line) in formatted_lines.clone().into_iter().enumerate() {

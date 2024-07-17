@@ -180,6 +180,15 @@ impl SearchResult {
     self.match_counts.push(total_matches_str);
     self.match_counts.last().unwrap()
   }
+
+  fn replace_single_file(&mut self, state: &State) {
+    if let Some(selected_index) = self.state.selected() {
+      if selected_index < state.search_result.list.len() {
+        let process_single_file_replace_thunk = AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(selected_index));
+        self.command_tx.as_ref().unwrap().send(process_single_file_replace_thunk).unwrap();
+      }
+    }
+  }
 }
 
 impl Component for SearchResult {
@@ -214,6 +223,10 @@ impl Component for SearchResult {
         },
         (KeyCode::Char('k') | KeyCode::Up, _) => {
           self.previous(state);
+          Ok(None)
+        },
+        (KeyCode::Char('r'), _) => {
+          self.replace_single_file(state);
           Ok(None)
         },
         (KeyCode::Enter, _) => {
