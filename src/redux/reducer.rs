@@ -14,7 +14,10 @@ use crate::{
 
 pub fn reducer(state: State, action: Action) -> State {
   match action {
-    Action::SetSearchList { search_list } => State { search_result: search_list, ..state },
+    Action::SetSearchList { search_list } => {
+      let filtered_search_result = search_list.list.clone();
+      State { search_result: search_list, filtered_search_result, ..state }
+    },
     Action::SetSelectedResult { result } => State { selected_result: result, ..state },
     Action::SetSearchText { text } => {
       let is_dialog_visible = check_dialog_visible(&state);
@@ -168,6 +171,23 @@ pub fn reducer(state: State, action: Action) -> State {
       } else {
         state
       }
+    },
+    Action::UpdateSearchResultFilter(filter) => {
+      log::info!("Filtering search results with filter: {}", filter);
+      let filtered_list = if filter.is_empty() {
+        log::info!("Filter is empty, returning original list");
+        state.search_result.list.clone()
+      } else {
+        state
+          .search_result
+          .list
+          .iter()
+          .filter(|result| result.path.to_lowercase().contains(&filter.to_lowercase()))
+          .cloned()
+          .collect()
+      };
+
+      State { search_result_filter: filter, filtered_search_result: filtered_list, ..state }
     },
   }
 }

@@ -9,7 +9,7 @@ use ratatui::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
-use tui_input::Input;
+use tui_input::{backend::crossterm::EventHandler, Input};
 
 use super::{Component, Frame};
 use crate::{
@@ -25,12 +25,17 @@ use crate::{
   tabs::Tab,
 };
 
+const DEBOUNCE_DURATION: Duration = Duration::from_millis(300);
+
 #[derive(Default)]
 pub struct SearchResult {
   command_tx: Option<UnboundedSender<AppAction>>,
   config: Config,
   state: ListState,
   match_counts: Vec<String>,
+  search_input: Input,
+  is_searching: bool,
+  debounce_timer: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl SearchResult {
@@ -189,6 +194,65 @@ impl SearchResult {
       }
     }
   }
+
+  fn handle_local_key_events(&mut self, key: KeyEvent, state: &State) {
+    match (key.code, key.modifiers) {
+      (KeyCode::Char('d'), _) => {
+        self.delete_file(state);
+      },
+      (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
+        self.top(state);
+      },
+      (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
+        self.bottom(state);
+      },
+      (KeyCode::Char('j') | KeyCode::Down, _) => {
+        self.next(state);
+      },
+      (KeyCode::Char('k') | KeyCode::Up, _) => {
+        self.previous(state);
+      },
+      (KeyCode::Char('r'), _) => {
+        self.replace_single_file(state);
+      },
+      (KeyCode::Enter, _) => {
+        let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
+        self.command_tx.as_ref().unwrap().send(action).unwrap();
+      },
+      _ => {},
+    }
+  }
+
+  // Filter the search result list based on the search input
+  fn toggle_search(&mut self) {
+    self.is_searching = !self.is_searching;
+  }
+
+  fn handle_search_input(&mut self, key: KeyEvent, state: &State) {
+    match (key.code, key.modifiers) {
+      (KeyCode::Esc, _) => {
+        self.is_searching = false;
+      },
+      _ => {
+        self.search_input.handle_event(&crossterm::event::Event::Key(key));
+        self.debounce_search();
+      },
+    }
+  }
+
+  fn debounce_search(&mut self) {
+    if let Some(timer) = self.debounce_timer.take() {
+      timer.abort();
+    }
+
+    let search_term = self.search_input.value().to_string();
+    let tx = self.command_tx.clone().unwrap();
+
+    self.debounce_timer = Some(tokio::spawn(async move {
+      tokio::time::sleep(DEBOUNCE_DURATION).await;
+      tx.send(AppAction::Action(Action::UpdateSearchResultFilter(search_term))).unwrap();
+    }));
+  }
 }
 
 impl Component for SearchResult {
@@ -205,33 +269,16 @@ impl Component for SearchResult {
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::SearchResultList {
       match (key.code, key.modifiers) {
-        (KeyCode::Char('d'), _) => {
-          self.delete_file(state);
+        (KeyCode::Char('/'), _) => {
+          self.toggle_search();
           Ok(None)
         },
-        (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
-          self.top(state);
+        _ if self.is_searching => {
+          self.handle_search_input(key, state);
           Ok(None)
         },
-        (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
-          self.bottom(state);
-          Ok(None)
-        },
-        (KeyCode::Char('j') | KeyCode::Down, _) => {
-          self.next(state);
-          Ok(None)
-        },
-        (KeyCode::Char('k') | KeyCode::Up, _) => {
-          self.previous(state);
-          Ok(None)
-        },
-        (KeyCode::Char('r'), _) => {
-          self.replace_single_file(state);
-          Ok(None)
-        },
-        (KeyCode::Enter, _) => {
-          let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
-          self.command_tx.as_ref().unwrap().send(action).unwrap();
+        _ if !self.is_searching => {
+          self.handle_local_key_events(key, state);
           Ok(None)
         },
         _ => Ok(None),
@@ -253,9 +300,9 @@ impl Component for SearchResult {
     };
 
     let project_root = state.project_root.to_string_lossy();
-    let list_items: Vec<ListItem> = state
-      .search_result
-      .list
+    let results_to_display = if self.is_searching { &state.filtered_search_result } else { &state.search_result.list };
+
+    let list_items: Vec<ListItem> = results_to_display
       .iter()
       .map(|s| {
         let text = Line::from(vec![
@@ -277,6 +324,21 @@ impl Component for SearchResult {
       .highlight_style(Style::default().bg(Color::Blue))
       .block(block);
     f.render_stateful_widget(details_widget, layout.search_details, &mut self.state);
+
+    if self.is_searching {
+      let search_input = Paragraph::new(self.search_input.value())
+        .style(Style::default().fg(Color::White))
+        .block(Block::default().borders(Borders::ALL).title("Search"));
+      let input_area = Rect::new(
+        layout.search_details.x,
+        layout.search_details.y + layout.search_details.height - 3,
+        layout.search_details.width,
+        3,
+      );
+      f.render_widget(search_input, input_area);
+      f.set_cursor(input_area.x + self.search_input.cursor() as u16 + 1, input_area.y + 1);
+    }
+
     Ok(())
   }
 }

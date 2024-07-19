@@ -18,9 +18,11 @@ pub mod tui;
 pub mod ui;
 pub mod utils;
 
+use std::process::Command;
+
 use clap::Parser;
 use cli::Cli;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use log::LevelFilter;
 
 use crate::{
@@ -28,9 +30,23 @@ use crate::{
   utils::{initialize_logging, initialize_panic_handler, version},
 };
 
+fn check_dependency(command: &str) -> bool {
+  Command::new(command).arg("--version").output().is_ok()
+}
+
 async fn tokio_main() -> Result<()> {
   // let _ = simple_logging::log_to_file("serpl.log", LevelFilter::Info);
 
+  if !check_dependency("rg") {
+    eprintln!("\x1b[31mError: ripgrep (rg) is not installed. Please install it to use serpl.\x1b[0m");
+    return Err(eyre!("ripgrep is not installed"));
+  }
+
+  #[cfg(feature = "ast_grep")]
+  if !check_dependency("ast-grep") {
+    eprintln!("\x1b[31mError: ast-grep is not installed. Please install it to use serpl with AST features.\x1b[0m");
+    return Err(eyre!("ast-grep is not installed"));
+  }
   initialize_panic_handler()?;
 
   let args = Cli::parse();

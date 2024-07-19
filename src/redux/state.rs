@@ -26,6 +26,8 @@ pub struct State {
   pub previous_focused_screen: FocusedScreen,
   pub help_dialog_visible: bool,
   pub is_large_folder: bool,
+  pub search_result_filter: String,
+  pub filtered_search_result: Vec<SearchResultState>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
