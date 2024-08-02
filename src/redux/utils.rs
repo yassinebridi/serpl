@@ -50,15 +50,28 @@ pub fn replace_file_normal(
   let file_path = &search_result.path;
 
   let content = fs::read_to_string(file_path).expect("Unable to read file");
+  let lines: Vec<&str> = content.lines().collect();
 
-  let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
+  let new_content = if replace_text_state.kind == ReplaceTextKind::DeleteLine {
+    let matched_lines: std::collections::HashSet<usize> =
+      search_result.matches.iter().map(|m| m.line_number - 1).collect();
 
-  let new_content = re
-    .replace_all(&content, |caps: &regex::Captures| {
+    lines
+      .iter()
+      .enumerate()
+      .filter(|(i, _)| !matched_lines.contains(i))
+      .map(|(_, line)| *line)
+      .collect::<Vec<&str>>()
+      .join("\n")
+  } else {
+    let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
+
+    re.replace_all(&content, |caps: &regex::Captures| {
       let matched_text = caps.get(0).unwrap().as_str();
       apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
     })
-    .to_string();
+    .to_string()
+  };
 
   fs::write(file_path, new_content).expect("Unable to write file");
 }
