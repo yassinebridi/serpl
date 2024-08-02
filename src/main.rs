@@ -35,7 +35,7 @@ fn check_dependency(command: &str) -> bool {
 }
 
 async fn tokio_main() -> Result<()> {
-  let _ = simple_logging::log_to_file("serpl.log", LevelFilter::Info);
+  // let _ = simple_logging::log_to_file("serpl.log", LevelFilter::Info);
 
   if !check_dependency("rg") {
     eprintln!("\x1b[31mError: ripgrep (rg) is not installed. Please install it to use serpl.\x1b[0m");
