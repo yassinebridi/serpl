@@ -62,6 +62,14 @@ https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a
 Check the [releases](https://github.com/yassinebridi/serpl/releases) page for the latest binaries.
 
 ### OS Specific Installation
+ 
+#### Brew
+
+`serpl` can be installed using [Homebrew](https://brew.sh/):
+
+```bash
+brew install serpl
+```
 
 #### Arch Linux
 
@@ -130,6 +138,7 @@ Default key bindings can be customized through the `config.json` file.
 | `G` / `Right` / `l`          | Go to bottom of the list                  |
 | `j` / `Down`                 | Move to the next item                     |
 | `k` / `Up`                   | Move to the previous item                 |
+| `/`                          | Search results list                       |
 | `d`                          | Delete selected file or line              |
 | `Esc`                        | Exit the current pane or dialog           |
 | `Enter` (in dialogs) / `y`   | Confirm action                            |
@@ -240,6 +249,8 @@ You can customize the key bindings by modifying the configuration file in the fo
 - List of files with search results.
 - Navigation to select and view files.
 - Option to delete files from the search results.
+- Search results count and current file count.
+- Ability to search the list using the `/` key.
 
 ### Preview Pane
 

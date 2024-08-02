@@ -55,7 +55,6 @@ impl ProcessSingleFileReplaceThunk {
       let mut lines: Vec<String> = content.lines().map(String::from).collect();
 
       if replace_text_state.kind == ReplaceTextKind::DeleteLine {
-        // For DeleteLine mode, remove all matched lines
         let matched_lines: Vec<usize> = search_result.matches.iter().map(|m| m.line_number - 1).collect();
         for &line_index in matched_lines.iter().rev() {
           if line_index < lines.len() {
