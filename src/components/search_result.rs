@@ -35,7 +35,8 @@ pub struct SearchResult {
   match_counts: Vec<String>,
   search_input: Input,
   is_searching: bool,
-  debounce_timer: Option<tokio::task::JoinHandle<()>>,
+  search_matches: Vec<usize>,
+  current_match_index: usize,
 }
 
 impl SearchResult {
@@ -215,43 +216,75 @@ impl SearchResult {
       (KeyCode::Char('r'), _) => {
         self.replace_single_file(state);
       },
+      (KeyCode::Esc, _) => {
+        self.is_searching = false;
+        self.search_matches.clear();
+        self.search_input.reset();
+        self.current_match_index = 0;
+      },
       (KeyCode::Enter, _) => {
         let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
         self.command_tx.as_ref().unwrap().send(action).unwrap();
+      },
+      (KeyCode::Char('n'), _) => {
+        self.next_match(state);
+      },
+      (KeyCode::Char('p'), _) => {
+        self.previous_match(state);
       },
       _ => {},
     }
   }
 
-  // Filter the search result list based on the search input
-  fn toggle_search(&mut self) {
-    self.is_searching = !self.is_searching;
-  }
-
   fn handle_search_input(&mut self, key: KeyEvent, state: &State) {
-    match (key.code, key.modifiers) {
-      (KeyCode::Esc, _) => {
+    match key.code {
+      KeyCode::Esc | KeyCode::Enter => {
         self.is_searching = false;
       },
       _ => {
         self.search_input.handle_event(&crossterm::event::Event::Key(key));
-        self.debounce_search();
+        self.perform_search(state);
       },
     }
   }
 
-  fn debounce_search(&mut self) {
-    if let Some(timer) = self.debounce_timer.take() {
-      timer.abort();
+  fn perform_search(&mut self, state: &State) {
+    let search_term = self.search_input.value().to_lowercase();
+    self.search_matches.clear();
+    self.current_match_index = 0;
+
+    for (index, result) in state.search_result.list.iter().enumerate() {
+      if result.path.to_lowercase().contains(&search_term) {
+        let result_index = result.index.unwrap();
+        self.search_matches.push(result_index);
+      }
     }
+    log::info!("111Search matches: {:?}", self.search_matches);
 
-    let search_term = self.search_input.value().to_string();
-    let tx = self.command_tx.clone().unwrap();
+    if !self.search_matches.is_empty() {
+      self.state.select(Some(self.search_matches[0]));
+      self.update_selected_result(state);
+    }
+  }
 
-    self.debounce_timer = Some(tokio::spawn(async move {
-      tokio::time::sleep(DEBOUNCE_DURATION).await;
-      tx.send(AppAction::Action(Action::UpdateSearchResultFilter(search_term))).unwrap();
-    }));
+  fn next_match(&mut self, state: &State) {
+    log::info!("Next match");
+    log::info!("Search matches: {:?}", self.search_matches);
+    if !self.search_matches.is_empty() {
+      self.current_match_index = (self.current_match_index + 1) % self.search_matches.len();
+      let next_index = self.search_matches[self.current_match_index];
+      self.state.select(Some(next_index));
+      self.update_selected_result(state);
+    }
+  }
+
+  fn previous_match(&mut self, state: &State) {
+    if !self.search_matches.is_empty() {
+      self.current_match_index = (self.current_match_index + self.search_matches.len() - 1) % self.search_matches.len();
+      let prev_index = self.search_matches[self.current_match_index];
+      self.state.select(Some(prev_index));
+      self.update_selected_result(state);
+    }
   }
 }
 
@@ -268,20 +301,20 @@ impl Component for SearchResult {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::SearchResultList {
-      match (key.code, key.modifiers) {
-        (KeyCode::Char('/'), _) => {
-          self.toggle_search();
+      match key.code {
+        KeyCode::Char('/') => {
+          self.is_searching = true;
+          self.search_input.reset();
           Ok(None)
         },
         _ if self.is_searching => {
           self.handle_search_input(key, state);
           Ok(None)
         },
-        _ if !self.is_searching => {
+        _ => {
           self.handle_local_key_events(key, state);
           Ok(None)
         },
-        _ => Ok(None),
       }
     } else {
       Ok(None)
@@ -300,24 +333,43 @@ impl Component for SearchResult {
     };
 
     let project_root = state.project_root.to_string_lossy();
-    let results_to_display = if self.is_searching { &state.filtered_search_result } else { &state.search_result.list };
+    let results_to_display = &state.search_result.list;
+    let search_term = self.search_input.value().to_lowercase();
 
     let list_items: Vec<ListItem> = results_to_display
       .iter()
-      .map(|s| {
-        let text = Line::from(vec![
-          Span::raw(s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path)),
-          Span::raw(" ("),
-          Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)),
-          Span::raw(")"),
-        ]);
-        ListItem::new(text)
+      .enumerate()
+      .map(|(index, s)| {
+        let path = s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path);
+        let mut spans = Vec::new();
+        let mut start = 0;
+
+        if !search_term.is_empty() {
+          for (idx, _) in path.to_lowercase().match_indices(&search_term) {
+            if start < idx {
+              spans.push(Span::raw(&path[start..idx]));
+            }
+            spans.push(Span::styled(
+              &path[idx..idx + search_term.len()],
+              Style::default().bg(Color::Yellow).fg(Color::Black),
+            ));
+            start = idx + search_term.len();
+          }
+        }
+
+        if start < path.len() {
+          spans.push(Span::raw(&path[start..]));
+        }
+
+        spans.push(Span::raw(" ("));
+        spans.push(Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)));
+        spans.push(Span::raw(")"));
+
+        ListItem::new(Line::from(spans))
       })
       .collect();
 
-    let internal_selected = state.selected_result.index.unwrap_or(0);
-    self.state.select(Some(internal_selected));
-    self.set_selected_result(state);
+    let internal_selected = self.state.selected().unwrap_or(0);
 
     let details_widget = List::new(list_items)
       .style(Style::default().fg(Color::White))

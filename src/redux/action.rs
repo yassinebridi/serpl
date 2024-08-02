@@ -32,5 +32,4 @@ pub enum Action {
   SetFocusedScreen { screen: Option<FocusedScreen> },
   RemoveFileFromList { index: usize },
   RemoveLineFromFile { file_index: usize, line_index: usize },
-  UpdateSearchResultFilter(String),
 }
