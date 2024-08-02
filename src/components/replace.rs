@@ -79,22 +79,29 @@ impl Component for Replace {
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
         (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
-          #[cfg(feature = "ast_grep")]
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
-            ReplaceTextKind::PreserveCase => ReplaceTextKind::AstGrep,
+            ReplaceTextKind::PreserveCase => ReplaceTextKind::DeleteLine,
+            ReplaceTextKind::DeleteLine => {
+              #[cfg(feature = "ast_grep")]
+              {
+                ReplaceTextKind::AstGrep
+              }
+              #[cfg(not(feature = "ast_grep"))]
+              {
+                ReplaceTextKind::Simple
+              }
+            },
+            #[cfg(feature = "ast_grep")]
             ReplaceTextKind::AstGrep => ReplaceTextKind::Simple,
-          };
-          #[cfg(not(feature = "ast_grep"))]
-          let replace_text_kind = match state.replace_text.kind {
-            ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
-            ReplaceTextKind::PreserveCase => ReplaceTextKind::Simple,
           };
           self.change_kind(replace_text_kind);
           Ok(None)
         },
         _ => {
-          self.handle_input(key, state);
+          if state.replace_text.kind != ReplaceTextKind::DeleteLine {
+            self.handle_input(key, state);
+          }
           Ok(None)
         },
       }
@@ -118,16 +125,12 @@ impl Component for Replace {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
 
-    #[cfg(feature = "ast_grep")]
     let replace_kind = match state.replace_text.kind {
       ReplaceTextKind::Simple => "[Simple]",
       ReplaceTextKind::PreserveCase => "[Preserve Case]",
+      ReplaceTextKind::DeleteLine => "[Delete Line]",
+      #[cfg(feature = "ast_grep")]
       ReplaceTextKind::AstGrep => "[AST Grep]",
-    };
-    #[cfg(not(feature = "ast_grep"))]
-    let replace_kind = match state.replace_text.kind {
-      ReplaceTextKind::Simple => "[Simple]",
-      ReplaceTextKind::PreserveCase => "[Preserve Case]",
     };
 
     let block = Block::bordered()
@@ -144,17 +147,26 @@ impl Component for Replace {
     let width = layout.replace_input.width.max(3) - 3;
     let scroll = self.input.visual_scroll(width as usize);
 
-    let replace_widget = Paragraph::new(self.input.value())
-      .style(Style::default().fg(Color::White))
-      .scroll((0, scroll as u16))
-      .block(block);
+    let replace_text = if state.replace_text.kind == ReplaceTextKind::DeleteLine {
+      "[Entire line will be deleted]"
+    } else {
+      self.input.value()
+    };
 
-    if state.focused_screen == FocusedScreen::ReplaceInput {
+    let replace_style = if state.replace_text.kind == ReplaceTextKind::DeleteLine {
+      Style::default().fg(Color::DarkGray)
+    } else {
+      Style::default().fg(Color::White)
+    };
+
+    let replace_widget = Paragraph::new(replace_text).style(replace_style).scroll((0, scroll as u16)).block(block);
+
+    if state.focused_screen == FocusedScreen::ReplaceInput && state.replace_text.kind != ReplaceTextKind::DeleteLine {
       f.set_cursor(
         layout.replace_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
         layout.replace_input.y + 1,
       );
-    };
+    }
 
     f.render_widget(replace_widget, layout.replace_input);
     Ok(())

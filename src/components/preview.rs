@@ -129,77 +129,83 @@ impl Preview {
       let line_number = submatches[0].line_start + i;
       let mut spans = Vec::new();
       let mut last_end = 0;
+      if *replace_kind == ReplaceTextKind::DeleteLine {
+        spans.push(Span::styled(
+          *line,
+          Style::default().fg(Color::White).bg(Color::Red).add_modifier(Modifier::CROSSED_OUT),
+        ));
+      } else {
+        for submatch in submatches.iter().filter(|sm| sm.line_start <= line_number && line_number <= sm.line_end) {
+          let start = if line_number == submatch.line_start { submatch.start } else { 0 };
+          let end = if line_number == submatch.line_end { submatch.end } else { line.len() };
 
-      for submatch in submatches.iter().filter(|sm| sm.line_start <= line_number && line_number <= sm.line_end) {
-        let start = if line_number == submatch.line_start { submatch.start } else { 0 };
-        let end = if line_number == submatch.line_end { submatch.end } else { line.len() };
-
-        if start > last_end {
-          spans.push(Span::raw(&line[last_end..start]));
-        }
-
-        let matched_text = &line[start..end];
-        if is_ast_grep {
-          let replacement_line = replacement_lines.get(i).unwrap_or(&"");
-          if replace_text.is_empty() {
-            spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
-          } else {
-            let (common_prefix, common_suffix) = Self::find_common_parts(matched_text, replacement_line);
-
-            spans.push(Span::raw(common_prefix));
-
-            let search_diff = &matched_text[common_prefix.len()..matched_text.len() - common_suffix.len()];
-            if !search_diff.trim().is_empty() {
-              spans.push(Span::styled(
-                search_diff,
-                Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
-              ));
-            }
-
-            let replace_diff = &replacement_line[common_prefix.len()..replacement_line.len() - common_suffix.len()];
-            if !replace_diff.trim().is_empty() {
-              spans.push(Span::styled(replace_diff, Style::default().fg(Color::White).bg(Color::Green)));
-            }
-
-            spans.push(Span::raw(common_suffix));
+          if start > last_end {
+            spans.push(Span::raw(&line[last_end..start]));
           }
-        } else {
-          let re = get_search_regex(matched_text, search_kind);
-          let mut last_match_end = 0;
 
-          for cap in re.captures_iter(matched_text) {
-            let m = cap.get(0).unwrap();
-            let match_start = m.start();
-            let match_end = m.end();
-
-            if match_start > last_match_end {
-              spans.push(Span::raw(&matched_text[last_match_end..match_start]));
-            }
-
+          let matched_text = &line[start..end];
+          if is_ast_grep {
+            let replacement_line = replacement_lines.get(i).unwrap_or(&"");
             if replace_text.is_empty() {
-              spans.push(Span::styled(&matched_text[match_start..match_end], Style::default().bg(Color::Blue)));
+              spans.push(Span::styled(matched_text, Style::default().bg(Color::Blue)));
             } else {
-              let replacement = apply_replace(&matched_text[match_start..match_end], replace_text, replace_kind);
-              spans.push(Span::styled(
-                &matched_text[match_start..match_end],
-                Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
-              ));
-              spans.push(Span::styled(replacement, Style::default().fg(Color::White).bg(Color::Green)));
+              let (common_prefix, common_suffix) = Self::find_common_parts(matched_text, replacement_line);
+
+              spans.push(Span::raw(common_prefix));
+
+              let search_diff = &matched_text[common_prefix.len()..matched_text.len() - common_suffix.len()];
+              if !search_diff.trim().is_empty() {
+                spans.push(Span::styled(
+                  search_diff,
+                  Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
+                ));
+              }
+
+              let replace_diff = &replacement_line[common_prefix.len()..replacement_line.len() - common_suffix.len()];
+              if !replace_diff.trim().is_empty() {
+                spans.push(Span::styled(replace_diff, Style::default().fg(Color::White).bg(Color::Green)));
+              }
+
+              spans.push(Span::raw(common_suffix));
+            }
+          } else {
+            let re = get_search_regex(matched_text, search_kind);
+            let mut last_match_end = 0;
+
+            for cap in re.captures_iter(matched_text) {
+              let m = cap.get(0).unwrap();
+              let match_start = m.start();
+              let match_end = m.end();
+
+              if match_start > last_match_end {
+                spans.push(Span::raw(&matched_text[last_match_end..match_start]));
+              }
+
+              if replace_text.is_empty() {
+                spans.push(Span::styled(&matched_text[match_start..match_end], Style::default().bg(Color::Blue)));
+              } else {
+                let replacement = apply_replace(&matched_text[match_start..match_end], replace_text, replace_kind);
+                spans.push(Span::styled(
+                  &matched_text[match_start..match_end],
+                  Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
+                ));
+                spans.push(Span::styled(replacement, Style::default().fg(Color::White).bg(Color::Green)));
+              }
+
+              last_match_end = match_end;
             }
 
-            last_match_end = match_end;
+            if last_match_end < matched_text.len() {
+              spans.push(Span::raw(&matched_text[last_match_end..]));
+            }
           }
 
-          if last_match_end < matched_text.len() {
-            spans.push(Span::raw(&matched_text[last_match_end..]));
-          }
+          last_end = end;
         }
 
-        last_end = end;
-      }
-
-      if last_end < line.len() {
-        spans.push(Span::raw(&line[last_end..]));
+        if last_end < line.len() {
+          spans.push(Span::raw(&line[last_end..]));
+        }
       }
 
       lines.push(Line::from(spans));

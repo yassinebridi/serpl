@@ -93,6 +93,7 @@ pub fn get_search_regex(search_text: &str, search_kind: &SearchTextKind) -> rege
 pub fn apply_replace(matched_text: &str, replace_text: &str, replace_kind: &ReplaceTextKind) -> String {
   match replace_kind {
     ReplaceTextKind::Simple => replace_text.to_string(),
+    ReplaceTextKind::DeleteLine => String::new(),
     ReplaceTextKind::PreserveCase => {
       let first_char = matched_text.chars().next().unwrap_or_default();
       if matched_text.chars().all(char::is_uppercase) {

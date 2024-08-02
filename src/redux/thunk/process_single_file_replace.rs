@@ -50,7 +50,23 @@ impl ProcessSingleFileReplaceThunk {
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
     if let Some(search_result) = search_list.list.get(self.file_index) {
-      replace_file_normal(search_result, &search_text_state, &replace_text_state);
+      let file_path = &search_result.path;
+      let content = fs::read_to_string(file_path).expect("Unable to read file");
+      let mut lines: Vec<String> = content.lines().map(String::from).collect();
+
+      if replace_text_state.kind == ReplaceTextKind::DeleteLine {
+        // For DeleteLine mode, remove all matched lines
+        let matched_lines: Vec<usize> = search_result.matches.iter().map(|m| m.line_number - 1).collect();
+        for &line_index in matched_lines.iter().rev() {
+          if line_index < lines.len() {
+            lines.remove(line_index);
+          }
+        }
+        let new_content = lines.join("\n");
+        fs::write(file_path, new_content).expect("Unable to write file");
+      } else {
+        replace_file_normal(search_result, &search_text_state, &replace_text_state);
+      }
     }
   }
 }
