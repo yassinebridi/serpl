@@ -69,6 +69,7 @@ pub enum ReplaceTextKind {
   #[default]
   Simple,
   PreserveCase,
+  DeleteLine,
   #[cfg(feature = "ast_grep")]
   AstGrep,
 }

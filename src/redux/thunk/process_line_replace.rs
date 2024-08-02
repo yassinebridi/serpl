@@ -98,14 +98,20 @@ fn process_normal_replace(
   let content = fs::read_to_string(file_path).expect("Unable to read file");
   let mut lines: Vec<String> = content.lines().map(String::from).collect();
 
-  let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
+  if replace_text_state.kind == ReplaceTextKind::DeleteLine {
+    if match_info.line_number > 0 && match_info.line_number <= lines.len() {
+      lines.remove(match_info.line_number - 1);
+    }
+  } else {
+    let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
 
-  if let Some(line) = lines.get_mut(match_info.line_number - 1) {
-    let replaced_line = re.replace_all(line, |caps: &regex::Captures| {
-      let matched_text = caps.get(0).unwrap().as_str();
-      apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
-    });
-    *line = replaced_line.into_owned();
+    if let Some(line) = lines.get_mut(match_info.line_number - 1) {
+      let replaced_line = re.replace_all(line, |caps: &regex::Captures| {
+        let matched_text = caps.get(0).unwrap().as_str();
+        apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
+      });
+      *line = replaced_line.into_owned();
+    }
   }
 
   let new_content = lines.join("\n");
