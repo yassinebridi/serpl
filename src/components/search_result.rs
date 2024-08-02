@@ -9,7 +9,7 @@ use ratatui::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
-use tui_input::Input;
+use tui_input::{backend::crossterm::EventHandler, Input};
 
 use super::{Component, Frame};
 use crate::{
@@ -25,12 +25,18 @@ use crate::{
   tabs::Tab,
 };
 
+const DEBOUNCE_DURATION: Duration = Duration::from_millis(300);
+
 #[derive(Default)]
 pub struct SearchResult {
   command_tx: Option<UnboundedSender<AppAction>>,
   config: Config,
   state: ListState,
   match_counts: Vec<String>,
+  search_input: Input,
+  is_searching: bool,
+  search_matches: Vec<usize>,
+  current_match_index: usize,
 }
 
 impl SearchResult {
@@ -189,6 +195,97 @@ impl SearchResult {
       }
     }
   }
+
+  fn handle_local_key_events(&mut self, key: KeyEvent, state: &State) {
+    match (key.code, key.modifiers) {
+      (KeyCode::Char('d'), _) => {
+        self.delete_file(state);
+      },
+      (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
+        self.top(state);
+      },
+      (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
+        self.bottom(state);
+      },
+      (KeyCode::Char('j') | KeyCode::Down, _) => {
+        self.next(state);
+      },
+      (KeyCode::Char('k') | KeyCode::Up, _) => {
+        self.previous(state);
+      },
+      (KeyCode::Char('r'), _) => {
+        self.replace_single_file(state);
+      },
+      (KeyCode::Esc, _) => {
+        self.is_searching = false;
+        self.search_matches.clear();
+        self.search_input.reset();
+        self.current_match_index = 0;
+      },
+      (KeyCode::Enter, _) => {
+        let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
+        self.command_tx.as_ref().unwrap().send(action).unwrap();
+      },
+      (KeyCode::Char('n'), _) => {
+        self.next_match(state);
+      },
+      (KeyCode::Char('p'), _) => {
+        self.previous_match(state);
+      },
+      _ => {},
+    }
+  }
+
+  fn handle_search_input(&mut self, key: KeyEvent, state: &State) {
+    match key.code {
+      KeyCode::Esc | KeyCode::Enter => {
+        self.is_searching = false;
+      },
+      _ => {
+        self.search_input.handle_event(&crossterm::event::Event::Key(key));
+        self.perform_search(state);
+      },
+    }
+  }
+
+  fn perform_search(&mut self, state: &State) {
+    let search_term = self.search_input.value().to_lowercase();
+    self.search_matches.clear();
+    self.current_match_index = 0;
+
+    for (index, result) in state.search_result.list.iter().enumerate() {
+      if result.path.to_lowercase().contains(&search_term) {
+        let result_index = result.index.unwrap();
+        self.search_matches.push(result_index);
+      }
+    }
+    log::info!("111Search matches: {:?}", self.search_matches);
+
+    if !self.search_matches.is_empty() {
+      self.state.select(Some(self.search_matches[0]));
+      self.update_selected_result(state);
+    }
+  }
+
+  fn next_match(&mut self, state: &State) {
+    log::info!("Next match");
+    log::info!("Search matches: {:?}", self.search_matches);
+    if !self.search_matches.is_empty() {
+      self.current_match_index = (self.current_match_index + 1) % self.search_matches.len();
+      let next_index = self.search_matches[self.current_match_index];
+      self.state.select(Some(next_index));
+      self.update_selected_result(state);
+    }
+  }
+
+  fn previous_match(&mut self, state: &State) {
+    if !self.search_matches.is_empty() {
+      self.current_match_index = (self.current_match_index + self.search_matches.len() - 1) % self.search_matches.len();
+      let prev_index = self.search_matches[self.current_match_index];
+      self.state.select(Some(prev_index));
+      self.update_selected_result(state);
+    }
+  }
 }
 
 impl Component for SearchResult {
@@ -204,37 +301,20 @@ impl Component for SearchResult {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::SearchResultList {
-      match (key.code, key.modifiers) {
-        (KeyCode::Char('d'), _) => {
-          self.delete_file(state);
+      match key.code {
+        KeyCode::Char('/') => {
+          self.is_searching = true;
+          self.search_input.reset();
           Ok(None)
         },
-        (KeyCode::Char('g') | KeyCode::Char('h') | KeyCode::Left, _) => {
-          self.top(state);
+        _ if self.is_searching => {
+          self.handle_search_input(key, state);
           Ok(None)
         },
-        (KeyCode::Char('G') | KeyCode::Char('l') | KeyCode::Right, _) => {
-          self.bottom(state);
+        _ => {
+          self.handle_local_key_events(key, state);
           Ok(None)
         },
-        (KeyCode::Char('j') | KeyCode::Down, _) => {
-          self.next(state);
-          Ok(None)
-        },
-        (KeyCode::Char('k') | KeyCode::Up, _) => {
-          self.previous(state);
-          Ok(None)
-        },
-        (KeyCode::Char('r'), _) => {
-          self.replace_single_file(state);
-          Ok(None)
-        },
-        (KeyCode::Enter, _) => {
-          let action = AppAction::Action(Action::SetActiveTab { tab: Tab::Preview });
-          self.command_tx.as_ref().unwrap().send(action).unwrap();
-          Ok(None)
-        },
-        _ => Ok(None),
       }
     } else {
       Ok(None)
@@ -253,30 +333,64 @@ impl Component for SearchResult {
     };
 
     let project_root = state.project_root.to_string_lossy();
-    let list_items: Vec<ListItem> = state
-      .search_result
-      .list
+    let results_to_display = &state.search_result.list;
+    let search_term = self.search_input.value().to_lowercase();
+
+    let list_items: Vec<ListItem> = results_to_display
       .iter()
-      .map(|s| {
-        let text = Line::from(vec![
-          Span::raw(s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path)),
-          Span::raw(" ("),
-          Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)),
-          Span::raw(")"),
-        ]);
-        ListItem::new(text)
+      .enumerate()
+      .map(|(index, s)| {
+        let path = s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path);
+        let mut spans = Vec::new();
+        let mut start = 0;
+
+        if !search_term.is_empty() {
+          for (idx, _) in path.to_lowercase().match_indices(&search_term) {
+            if start < idx {
+              spans.push(Span::raw(&path[start..idx]));
+            }
+            spans.push(Span::styled(
+              &path[idx..idx + search_term.len()],
+              Style::default().bg(Color::Yellow).fg(Color::Black),
+            ));
+            start = idx + search_term.len();
+          }
+        }
+
+        if start < path.len() {
+          spans.push(Span::raw(&path[start..]));
+        }
+
+        spans.push(Span::raw(" ("));
+        spans.push(Span::styled(s.total_matches.to_string(), Style::default().fg(Color::Yellow)));
+        spans.push(Span::raw(")"));
+
+        ListItem::new(Line::from(spans))
       })
       .collect();
 
-    let internal_selected = state.selected_result.index.unwrap_or(0);
-    self.state.select(Some(internal_selected));
-    self.set_selected_result(state);
+    let internal_selected = self.state.selected().unwrap_or(0);
 
     let details_widget = List::new(list_items)
       .style(Style::default().fg(Color::White))
       .highlight_style(Style::default().bg(Color::Blue))
       .block(block);
     f.render_stateful_widget(details_widget, layout.search_details, &mut self.state);
+
+    if self.is_searching {
+      let search_input = Paragraph::new(self.search_input.value())
+        .style(Style::default().fg(Color::White))
+        .block(Block::default().borders(Borders::ALL).title("Search"));
+      let input_area = Rect::new(
+        layout.search_details.x,
+        layout.search_details.y + layout.search_details.height - 3,
+        layout.search_details.width,
+        3,
+      );
+      f.render_widget(search_input, input_area);
+      f.set_cursor(input_area.x + self.search_input.cursor() as u16 + 1, input_area.y + 1);
+    }
+
     Ok(())
   }
 }
