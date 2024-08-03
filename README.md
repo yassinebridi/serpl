@@ -161,7 +161,8 @@ Default key bindings can be customized through the `config.json` file.
     "<Ctrl-c>": "Quit",
     "<Tab>": "LoopOverTabs",
     "<Backtab>": "BackLoopOverTabs",
-    "<Ctrl-o>": "ProcessReplace"
+    "<Ctrl-o>": "ProcessReplace",
+    "<Ctrl-b>": "ShowHelp"
   }
 }
 ```
@@ -177,6 +178,7 @@ Default key bindings can be customized through the `config.json` file.
     "<Tab>": "LoopOverTabs",
     "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
+    "<Ctrl-b>": "ShowHelp",
   },
 }
 ```
@@ -191,6 +193,7 @@ keybindings:
   "<Tab>": "LoopOverTabs"
   "<Backtab>": "BackLoopOverTabs"
   "<Ctrl-o>": "ProcessReplace"
+  "<Ctrl-b>": "ShowHelp"
 ```
 </details>
 <details>
@@ -203,6 +206,7 @@ keybindings:
 "<Tab>" = "LoopOverTabs"
 "<Backtab>" = "BackLoopOverTabs"
 "<Ctrl-o>" = "ProcessReplace"
+"<Ctrl-b>" = "ShowHelp"
 ```
 </details>
 <details>
@@ -215,6 +219,7 @@ keybindings:
 <Tab> = LoopOverTabs
 <Backtab> = BackLoopOverTabs
 <Ctrl-o> = ProcessReplace
+<Ctrl-b> = ShowHelp
 ```
 </details>
 
