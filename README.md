@@ -127,6 +127,7 @@ Default key bindings can be customized through the `config.json` file.
 | Key Combination              | Action                                    |
 | ---------------------------- | ----------------------------------------- |
 | `Ctrl + c`                   | Quit                                      |
+| `Ctrl + d`                   | Quit                                      |
 | `Ctrl + b`                   | Help                                      |
 | `Tab`                        | Switch between tabs                       |
 | `Backtab`                    | Switch to previous tabs                   |
