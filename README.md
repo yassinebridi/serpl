@@ -23,10 +23,11 @@ https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a
    - [Preview Pane](#preview-pane)
 5. [Quick Hints](#quick-hints)
 6. [Neovim Integration using toggleterm](#neovim-integration-using-toggleterm)
-7. [License](#license)
-8. [Contributing](#contributing)
-9. [Acknowledgements](#acknowledgements)
-10. [Similar Projects](#similar-projects)
+7. [Helix Integration](#helix-integration)
+8. [License](#license)
+9. [Contributing](#contributing)
+10. [Acknowledgements](#acknowledgements)
+11. [Similar Projects](#similar-projects)
 
 ## Features
 
@@ -336,6 +337,15 @@ return {
     float_opts = { border = "rounded" },
   },
 }
+```
+
+## Helix integration
+
+You can add a keybinding like the following to open Serpl inside Helix:
+
+```toml
+[keys.normal.ret]
+t = [":write-all", ":insert-output serpl >/dev/tty", ":redraw", ":reload-all"]
 ```
 
 ## License
