@@ -130,7 +130,9 @@ impl App {
     tui.enter()?;
 
     for component in self.components.iter_mut() {
-      component.init(tui.size()?)?;
+      let size = tui.size()?;
+      let rect = Rect::new(0, 0, size.width, size.height);
+      component.init(rect)?;
     }
 
     // handle big folders
