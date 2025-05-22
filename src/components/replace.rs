@@ -135,8 +135,8 @@ impl Component for Replace {
 
     let block = Block::bordered()
       .border_type(BorderType::Rounded)
-      .title(Title::from("Replace").alignment(Alignment::Left))
-      .title(Title::from(replace_kind).alignment(Alignment::Right));
+      .title_top(Line::from("Replace").left_aligned())
+      .title_top(Line::from(replace_kind).right_aligned());
 
     let block = if state.focused_screen == FocusedScreen::ReplaceInput {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
@@ -162,10 +162,10 @@ impl Component for Replace {
     let replace_widget = Paragraph::new(replace_text).style(replace_style).scroll((0, scroll as u16)).block(block);
 
     if state.focused_screen == FocusedScreen::ReplaceInput && state.replace_text.kind != ReplaceTextKind::DeleteLine {
-      f.set_cursor(
-        layout.replace_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
-        layout.replace_input.y + 1,
-      );
+      f.set_cursor_position(Position {
+        x: layout.replace_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
+        y: layout.replace_input.y + 1,
+      });
     }
 
     f.render_widget(replace_widget, layout.replace_input);

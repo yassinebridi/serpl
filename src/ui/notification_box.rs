@@ -19,7 +19,7 @@ impl<'a> NotificationBox<'a> {
   }
 }
 
-impl<'a> Widget for NotificationBox<'a> {
+impl Widget for NotificationBox<'_> {
   fn render(self, area: Rect, buf: &mut Buffer) {
     Clear.render(area, buf);
 

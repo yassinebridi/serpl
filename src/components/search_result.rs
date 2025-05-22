@@ -324,8 +324,7 @@ impl Component for SearchResult {
   fn draw(&mut self, f: &mut Frame<'_>, area: Rect, state: &State) -> Result<()> {
     let layout = get_layout(area);
 
-    let block =
-      Block::bordered().border_type(BorderType::Rounded).title(Title::from("Result List").alignment(Alignment::Left));
+    let block = Block::bordered().border_type(BorderType::Rounded).title(Line::from("Result List").left_aligned());
     let block = if state.focused_screen == FocusedScreen::SearchResultList {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
     } else {
@@ -388,7 +387,7 @@ impl Component for SearchResult {
         3,
       );
       f.render_widget(search_input, input_area);
-      f.set_cursor(input_area.x + self.search_input.cursor() as u16 + 1, input_area.y + 1);
+      f.set_cursor_position(Position { x: input_area.x + self.search_input.cursor() as u16 + 1, y: input_area.y + 1 });
     }
 
     Ok(())

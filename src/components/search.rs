@@ -186,8 +186,8 @@ impl Component for Search {
 
     let block = Block::bordered()
       .border_type(BorderType::Rounded)
-      .title(Title::from("Search").alignment(Alignment::Left))
-      .title(Title::from(search_kind).alignment(Alignment::Right));
+      .title_top(Line::from("Search").left_aligned())
+      .title_top(Line::from(search_kind).right_aligned());
 
     let block = if state.focused_screen == FocusedScreen::SearchInput {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
@@ -204,10 +204,10 @@ impl Component for Search {
       .block(block);
 
     if state.focused_screen == FocusedScreen::SearchInput {
-      f.set_cursor(
-        layout.search_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
-        layout.search_input.y + 1,
-      );
+      f.set_cursor_position(Position {
+        x: layout.search_input.x + ((self.input.visual_cursor()).max(scroll) - scroll) as u16 + 1,
+        y: layout.search_input.y + 1,
+      });
     };
 
     f.render_widget(search_widget, layout.search_input);
