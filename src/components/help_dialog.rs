@@ -27,10 +27,10 @@ pub struct HelpDialog {
 
 impl HelpDialog {
   pub fn new() -> Self {
-    let tabs = vec![Tab { title: "[1] Global".to_string(), content: Self::global_keybindings() }, Tab {
-      title: "[2] Navigation".to_string(),
-      content: Self::navigation_keybindings(),
-    }];
+    let tabs = vec![
+      Tab { title: "[1] Global".to_string(), content: Self::global_keybindings() },
+      Tab { title: "[2] Navigation".to_string(), content: Self::navigation_keybindings() },
+    ];
     Self { tabs, active_tab: 0, ..Default::default() }
   }
 

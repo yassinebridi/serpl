@@ -77,8 +77,11 @@ impl ProcessSearchThunk {
 
       aggregated_results
         .entry(result.file.clone())
-        .or_insert_with(|| {
-          SearchResultState { index: None, path: result.file.clone(), matches: Vec::new(), total_matches: 0 }
+        .or_insert_with(|| SearchResultState {
+          index: None,
+          path: result.file.clone(),
+          matches: Vec::new(),
+          total_matches: 0,
         })
         .matches
         .push(Match {
