@@ -2,11 +2,7 @@ use std::{collections::HashMap, default, time::Duration};
 
 use color_eyre::{eyre::Result, owo_colors::OwoColorize};
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::{
-  prelude::*,
-  style::Stylize,
-  widgets::{block::Title, *},
-};
+use ratatui::{prelude::*, style::Stylize, widgets::*};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_input::{backend::crossterm::EventHandler, Input};
@@ -339,7 +335,7 @@ impl Component for SearchResult {
       .iter()
       .enumerate()
       .map(|(index, s)| {
-        let path = s.path.strip_prefix(format!("{}/", project_root).as_str()).unwrap_or(&s.path);
+        let path = s.path.strip_prefix(format!("{project_root}/").as_str()).unwrap_or(&s.path);
         let mut spans = Vec::new();
         let mut start = 0;
 

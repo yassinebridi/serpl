@@ -6,11 +6,7 @@ use std::{
 
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{
-  layout::Position,
-  prelude::*,
-  widgets::{block::Title, *},
-};
+use ratatui::{layout::Position, prelude::*, widgets::*};
 use serde::{Deserialize, Serialize};
 use tokio::{sync::mpsc::UnboundedSender, time::Instant};
 use tracing::{event, trace, Level};

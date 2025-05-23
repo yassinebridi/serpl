@@ -211,7 +211,7 @@ impl App {
               for component in self.components.iter_mut() {
                 let r = component.draw(f, f.area(), &state);
                 if let Err(e) = r {
-                  action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {:?}", e)))).unwrap();
+                  action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {e:?}")))).unwrap();
                 }
               }
             })?;
@@ -223,7 +223,7 @@ impl App {
                 for component in self.components.iter_mut() {
                   let r = component.draw(f, f.area(), &state);
                   if let Err(e) = r {
-                    action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {:?}", e)))).unwrap();
+                    action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {e:?}")))).unwrap();
                   }
                 }
               })?;

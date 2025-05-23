@@ -2,10 +2,7 @@ use std::{collections::HashMap, time::Duration};
 
 use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{
-  prelude::*,
-  widgets::{block::Title, *},
-};
+use ratatui::{prelude::*, widgets::*};
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::UnboundedSender;
 use tui_input::{backend::crossterm::EventHandler, Input};

@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for AppAction {
               let height: u16 = parts[1].trim().parse().map_err(E::custom)?;
               Ok(AppAction::Tui(TuiAction::Resize(width, height)))
             } else {
-              Err(E::custom(format!("Invalid Resize format: {}", value)))
+              Err(E::custom(format!("Invalid Resize format: {value}")))
             }
           },
           // Redux actions
@@ -107,7 +107,7 @@ impl<'de> Deserialize<'de> for AppAction {
           })),
           // Redux Thunk Actions
           "ProcessReplace" => Ok(AppAction::Thunk(ThunkAction::ProcessReplace(ForceReplace(false)))),
-          _ => Err(E::custom(format!("Unknown Action variant: {}", value))),
+          _ => Err(E::custom(format!("Unknown Action variant: {value}"))),
         }
       }
     }
