@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for AppAction {
   {
     struct ActionVisitor;
 
-    impl<'de> Visitor<'de> for ActionVisitor {
+    impl Visitor<'_> for ActionVisitor {
       type Value = AppAction;
 
       fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for AppAction {
               let height: u16 = parts[1].trim().parse().map_err(E::custom)?;
               Ok(AppAction::Tui(TuiAction::Resize(width, height)))
             } else {
-              Err(E::custom(format!("Invalid Resize format: {}", value)))
+              Err(E::custom(format!("Invalid Resize format: {value}")))
             }
           },
           // Redux actions
@@ -102,14 +102,12 @@ impl<'de> Deserialize<'de> for AppAction {
           "SearchResultTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult })),
           "InputMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Input })),
           "NormalMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Normal })),
-          "ShowHelp" => {
-            Ok(AppAction::Action(Action::SetDialog {
-              dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),
-            }))
-          },
+          "ShowHelp" => Ok(AppAction::Action(Action::SetDialog {
+            dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),
+          })),
           // Redux Thunk Actions
           "ProcessReplace" => Ok(AppAction::Thunk(ThunkAction::ProcessReplace(ForceReplace(false)))),
-          _ => Err(E::custom(format!("Unknown Action variant: {}", value))),
+          _ => Err(E::custom(format!("Unknown Action variant: {value}"))),
         }
       }
     }

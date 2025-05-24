@@ -320,7 +320,7 @@ impl Component for Preview {
         let line_style = Style::default().fg(Color::DarkGray);
         let context_line_number = line_number.saturating_sub(result.context_before.len() - i);
         let spans = vec![
-          Span::styled(format!("{:4} ", context_line_number), Style::default().fg(Color::Blue)),
+          Span::styled(format!("{context_line_number:4} "), Style::default().fg(Color::Blue)),
           Span::styled(line, line_style),
         ];
         lines.push(Line::from(spans));

@@ -87,13 +87,10 @@ pub fn get_search_regex(search_text: &str, search_kind: &SearchTextKind) -> rege
       RegexBuilder::new(&escaped_search_text).case_insensitive(false).build().expect("Invalid regex")
     },
     SearchTextKind::MatchWholeWord => {
-      RegexBuilder::new(&format!(r"\b{}\b", escaped_search_text)).case_insensitive(true).build().expect("Invalid regex")
+      RegexBuilder::new(&format!(r"\b{escaped_search_text}\b")).case_insensitive(true).build().expect("Invalid regex")
     },
     SearchTextKind::MatchCaseWholeWord => {
-      RegexBuilder::new(&format!(r"\b{}\b", escaped_search_text))
-        .case_insensitive(false)
-        .build()
-        .expect("Invalid regex")
+      RegexBuilder::new(&format!(r"\b{escaped_search_text}\b")).case_insensitive(false).build().expect("Invalid regex")
     },
     SearchTextKind::Regex => {
       RegexBuilder::new(&escaped_search_text).case_insensitive(true).build().expect("Invalid regex")

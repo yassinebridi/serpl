@@ -130,7 +130,9 @@ impl App {
     tui.enter()?;
 
     for component in self.components.iter_mut() {
-      component.init(tui.size()?)?;
+      let size = tui.size()?;
+      let rect = Rect::new(0, 0, size.width, size.height);
+      component.init(rect)?;
     }
 
     // handle big folders
@@ -207,9 +209,9 @@ impl App {
             tui.resize(Rect::new(0, 0, w, h))?;
             tui.draw(|f| {
               for component in self.components.iter_mut() {
-                let r = component.draw(f, f.size(), &state);
+                let r = component.draw(f, f.area(), &state);
                 if let Err(e) = r {
-                  action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {:?}", e)))).unwrap();
+                  action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {e:?}")))).unwrap();
                 }
               }
             })?;
@@ -219,9 +221,9 @@ impl App {
               rendered = true;
               tui.draw(|f| {
                 for component in self.components.iter_mut() {
-                  let r = component.draw(f, f.size(), &state);
+                  let r = component.draw(f, f.area(), &state);
                   if let Err(e) = r {
-                    action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {:?}", e)))).unwrap();
+                    action_tx.send(AppAction::Tui(TuiAction::Error(format!("Failed to draw: {e:?}")))).unwrap();
                   }
                 }
               })?;
