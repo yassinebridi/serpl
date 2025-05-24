@@ -77,8 +77,8 @@ jobs:
       - name: Update Cargo.lock
         run: cargo update
          
-      - name: Format Code
-        run: cargo fmt --all
+      # - name: Format Code
+      #   run: cargo fmt --all
 
       - name: Commit and Tag
         run: |
