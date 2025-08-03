@@ -93,7 +93,10 @@ pub fn get_search_regex(search_text: &str, search_kind: &SearchTextKind) -> rege
       RegexBuilder::new(&format!(r"\b{escaped_search_text}\b")).case_insensitive(false).build().expect("Invalid regex")
     },
     SearchTextKind::Regex => {
-      RegexBuilder::new(&escaped_search_text).case_insensitive(true).build().expect("Invalid regex")
+      RegexBuilder::new(search_text)
+        .case_insensitive(true)
+        .build()
+        .unwrap_or_else(|_| RegexBuilder::new(r"(a)^").build().unwrap())
     },
     #[cfg(feature = "ast_grep")]
     SearchTextKind::AstGrep => unreachable!("AST Grep doesn't use regex"),
