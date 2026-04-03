@@ -33,8 +33,8 @@ where
     if self.file_index < search_list.list.len() {
       let file_result = &mut search_list.list[self.file_index];
       if self.line_index < file_result.matches.len() {
-        file_result.matches.remove(self.line_index);
-        file_result.total_matches -= 1;
+        let deleted_match = file_result.matches.remove(self.line_index);
+        file_result.total_matches -= deleted_match.submatches.len();
 
         if file_result.matches.is_empty() {
           search_list.list.remove(self.file_index);

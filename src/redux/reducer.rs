@@ -145,8 +145,8 @@ pub fn reducer(state: State, action: Action) -> State {
       if file_index < new_search_result.list.len() {
         let file_result = &mut new_search_result.list[file_index];
         if line_index < file_result.matches.len() {
-          file_result.matches.remove(line_index);
-          file_result.total_matches -= 1;
+          let deleted_match = file_result.matches.remove(line_index);
+          file_result.total_matches -= deleted_match.submatches.len();
 
           if file_result.matches.is_empty() {
             new_search_result.list.remove(file_index);
