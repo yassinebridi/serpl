@@ -86,7 +86,6 @@ jobs:
           git add .
           git commit -m "Bump version to $NEW_VERSION"
           git tag -a "$NEW_VERSION" -m "Release version $NEW_VERSION"
-          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git
           git push origin main --tags
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
