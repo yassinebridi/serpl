@@ -169,7 +169,10 @@ impl Preview {
               spans.push(Span::raw(common_suffix));
             }
           } else {
-            let re = get_search_regex(matched_text, search_kind);
+            let re = regex::RegexBuilder::new(&regex::escape(matched_text))
+              .case_insensitive(false)
+              .build()
+              .expect("Invalid regex");
             let mut last_match_end = 0;
 
             for cap in re.captures_iter(matched_text) {
