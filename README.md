@@ -365,4 +365,5 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - Thanks to the [ast-grep](https://ast-grep.github.io) project for providing the AST Grep functionality.
 
 ## Similar Projects
+- [fastmod](https://github.com/facebookincubator/fastmod): A fast interactive search and replace tool for terminal.
 - [repgrep](https://github.com/acheronfail/repgrep): An interactive replacer for ripgrep that makes it easy to find and replace across files on the command line.
