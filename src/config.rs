@@ -13,8 +13,8 @@ use serde_json::Value as JsonValue;
 
 use crate::{
   action::{AppAction, TuiAction},
-  redux::action::Action,
   mode::Mode,
+  redux::action::Action,
 };
 
 const CONFIG: &str = include_str!("../.config/config.json5");
