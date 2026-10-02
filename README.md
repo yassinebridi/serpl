@@ -235,6 +235,8 @@ keybindings:
 
 You can customize the key bindings by modifying the configuration file in the format of your choice.
 
+To remap the search/replace mode toggle (default `Ctrl-n`), bind `ToggleInputMode` to another key, e.g. `"<Ctrl-t>": "ToggleInputMode"`. The default `Ctrl-n` is then released and can be reused. Note that `Tab`, `Shift-Tab` and `Ctrl-b` cannot be used for this action.
+
 ## Panes
 
 ### Search Input
