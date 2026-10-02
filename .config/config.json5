@@ -10,5 +10,13 @@
     "<Ctrl-b>": "ShowHelp",
     "<Ctrl-n>": "ToggleInputMode",
     "<Ctrl-g>": "ToggleHiddenFiles",
+    "<Alt-1>": "SearchTab",
+    "<Alt-2>": "ReplaceTab",
+    "<Alt-3>": "SearchResultTab",
+    "<Alt-4>": "PreviewTab",
+    "<Ctrl-1>": "SearchTab",
+    "<Ctrl-2>": "ReplaceTab",
+    "<Ctrl-3>": "SearchResultTab",
+    "<Ctrl-4>": "PreviewTab",
   }
 }
