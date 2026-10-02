@@ -109,6 +109,7 @@ impl<'de> Deserialize<'de> for AppAction {
             }))
           },
           // Redux Thunk Actions
+          "ToggleHiddenFiles" => Ok(AppAction::Thunk(ThunkAction::ToggleHiddenFiles)),
           "ProcessReplace" => Ok(AppAction::Thunk(ThunkAction::ProcessReplace(ForceReplace(false)))),
           _ => Err(E::custom(format!("Unknown Action variant: {value}"))),
         }

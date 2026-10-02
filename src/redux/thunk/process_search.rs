@@ -22,6 +22,32 @@ use crate::{
   ripgrep::{RipgrepLines, RipgrepOutput, RipgrepSummary},
 };
 
+/// Builds the ripgrep arguments for a search.
+///
+/// When `include_hidden` is set, hidden files are searched too, but `.git` is always
+/// excluded so replacing never touches repository internals.
+pub fn build_rg_args(search_text_state: &SearchTextState, project_root: &str, include_hidden: bool) -> Vec<String> {
+  let mut rg_args: Vec<String> = vec!["--json".into(), "-C".into(), "3".into()];
+
+  if include_hidden {
+    rg_args.extend(["--hidden".into(), "--glob".into(), "!.git".into()]);
+  }
+
+  let text = search_text_state.text.clone();
+  match search_text_state.kind {
+    SearchTextKind::Regex => rg_args.push(text),
+    SearchTextKind::MatchCase => rg_args.extend(["-s".into(), text]),
+    SearchTextKind::MatchWholeWord => rg_args.extend(["-w".into(), "-i".into(), text]),
+    SearchTextKind::MatchCaseWholeWord => rg_args.extend(["-w".into(), "-s".into(), text]),
+    SearchTextKind::Simple => rg_args.extend(["-i".into(), "-F".into(), text]),
+    #[cfg(feature = "ast_grep")]
+    SearchTextKind::AstGrep => {},
+  }
+
+  rg_args.push(project_root.to_string());
+  rg_args
+}
+
 pub struct ProcessSearchThunk {}
 
 impl ProcessSearchThunk {
@@ -57,8 +83,12 @@ impl ProcessSearchThunk {
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
     let replace_text = replace_text_state.text.clone();
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
+    let include_hidden = store.select(|state: &State| state.include_hidden).await;
 
     let mut args = vec!["run", "-p", &search_text_state.text, "--json=compact", project_root.to_str().unwrap()];
+    if include_hidden {
+      args.extend(["--no-ignore", "hidden", "--globs", "!.git"]);
+    }
     if !replace_text.is_empty() {
       args.push("-r");
       args.push(&replace_text);
@@ -120,20 +150,8 @@ impl ProcessSearchThunk {
   async fn process_normal_search(&self, store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>) {
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let project_root = store.select(|state: &State| state.project_root.clone()).await;
-    let mut rg_args = vec!["--json", "-C", "3"];
-
-    match search_text_state.kind {
-      SearchTextKind::Regex => rg_args.push(&search_text_state.text),
-      SearchTextKind::MatchCase => rg_args.extend(&["-s", &search_text_state.text]),
-      SearchTextKind::MatchWholeWord => rg_args.extend(&["-w", "-i", &search_text_state.text]),
-      SearchTextKind::MatchCaseWholeWord => rg_args.extend(&["-w", "-s", &search_text_state.text]),
-      SearchTextKind::Simple => rg_args.extend(&["-i", "-F", &search_text_state.text]),
-      #[cfg(feature = "ast_grep")]
-      SearchTextKind::AstGrep => {},
-    }
-
-    let project_root_str = project_root.to_string_lossy();
-    rg_args.push(&project_root_str);
+    let include_hidden = store.select(|state: &State| state.include_hidden).await;
+    let rg_args = build_rg_args(&search_text_state, &project_root.to_string_lossy(), include_hidden);
 
     let output = Command::new("rg").args(&rg_args).output().expect("Failed to execute ripgrep");
 
@@ -265,6 +283,46 @@ where
       }
       #[cfg(not(feature = "ast_grep"))]
       self.process_normal_search(&store).await;
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use pretty_assertions::assert_eq;
+
+  use super::*;
+
+  fn state(kind: SearchTextKind) -> SearchTextState {
+    SearchTextState { text: "foo".to_string(), kind }
+  }
+
+  #[test]
+  fn rg_args_exclude_hidden_by_default() {
+    let args = build_rg_args(&state(SearchTextKind::Simple), "/root", false);
+    assert_eq!(args, vec!["--json", "-C", "3", "-i", "-F", "foo", "/root"]);
+  }
+
+  #[test]
+  fn rg_args_include_hidden_but_skip_git() {
+    let args = build_rg_args(&state(SearchTextKind::Simple), "/root", true);
+    assert_eq!(args, vec!["--json", "-C", "3", "--hidden", "--glob", "!.git", "-i", "-F", "foo", "/root"]);
+  }
+
+  #[test]
+  fn rg_args_hidden_flags_precede_pattern_for_every_kind() {
+    for kind in [
+      SearchTextKind::Regex,
+      SearchTextKind::MatchCase,
+      SearchTextKind::MatchWholeWord,
+      SearchTextKind::MatchCaseWholeWord,
+      SearchTextKind::Simple,
+    ] {
+      let args = build_rg_args(&state(kind), "/root", true);
+      let hidden = args.iter().position(|a| a == "--hidden").unwrap();
+      let pattern = args.iter().position(|a| a == "foo").unwrap();
+      assert!(hidden < pattern, "{kind:?}: {args:?}");
+      assert_eq!(args.last().unwrap(), "/root");
     }
   }
 }

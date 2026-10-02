@@ -55,10 +55,11 @@ pub struct App {
   pub mode: Mode,
   pub last_tick_key_events: Vec<KeyEvent>,
   pub project_root: PathBuf,
+  pub include_hidden: bool,
 }
 
 impl App {
-  pub fn new(project_root: PathBuf) -> Result<Self> {
+  pub fn new(project_root: PathBuf, include_hidden: bool) -> Result<Self> {
     let config = Config::new()?;
     let mode = Mode::Normal;
 
@@ -93,6 +94,7 @@ impl App {
       mode,
       last_tick_key_events: Vec::new(),
       project_root,
+      include_hidden,
     })
   }
 
@@ -119,7 +121,7 @@ impl App {
 
   pub async fn run(&mut self) -> Result<()> {
     log::info!("Starting app..");
-    let initial_state = State::new(self.project_root.clone());
+    let initial_state = State::new(self.project_root.clone()).with_include_hidden(self.include_hidden);
     let mut state = initial_state.clone();
 
     let (action_tx, mut action_rx) = mpsc::unbounded_channel();
@@ -139,7 +141,11 @@ impl App {
     let is_large_folder = Self::is_large_folder(&self.project_root);
     state.is_large_folder = is_large_folder;
     let store = Store::new_with_state(reducer, state).wrap(ThunkMiddleware).await;
-    if is_large_folder {
+    if self.include_hidden {
+      action_tx.send(AppAction::Tui(TuiAction::Notify(NotificationEnum::Info(
+        "Hidden files included. Click 'Enter' to search".to_string(),
+      ))))?;
+    } else if is_large_folder {
       let search_text_action = AppAction::Tui(TuiAction::Notify(NotificationEnum::Info(
         "This is a large folder. click 'Enter' to search".to_string(),
       )));

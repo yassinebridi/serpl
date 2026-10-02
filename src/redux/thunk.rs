@@ -12,10 +12,12 @@ pub mod process_search;
 pub mod process_single_file_replace;
 pub mod remove_file_from_list;
 pub mod remove_line_from_file;
+pub mod toggle_hidden_files;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ThunkAction {
   ProcessSearch,
+  ToggleHiddenFiles,
   ProcessReplace(ForceReplace),
   RemoveFileFromList(usize),
   RemoveLineFromFile(usize, usize),
@@ -35,6 +37,7 @@ where
 {
   match action {
     ThunkAction::ProcessSearch => Box::new(process_search::ProcessSearchThunk::new()),
+    ThunkAction::ToggleHiddenFiles => Box::new(toggle_hidden_files::ToggleHiddenFilesThunk::new(command_tx)),
     ThunkAction::ProcessReplace(force_replace) => {
       Box::new(process_replace::ProcessReplaceThunk::new(command_tx, force_replace))
     },

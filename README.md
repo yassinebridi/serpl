@@ -122,6 +122,12 @@ nix profile install nixpkgs#serpl
   serpl --project-root /path/to/project
   ```
 
+- Include hidden files in the search (they are skipped by default; `.git` is always excluded):
+  ```bash
+  serpl --hidden
+  ```
+  Hidden files can also be toggled at runtime with `Ctrl + g`. While hidden files are included, searching on every key press is disabled and the search runs on `Enter` only (the Search box shows a reminder).
+
 ### Key Bindings
 
 Default key bindings can be customized through the `config.json` file.
@@ -138,7 +144,8 @@ Default key bindings can be customized through the `config.json` file.
 | `Ctrl + o`                   | Process replace for all files             |
 | `r`                          | Process replace for selected file or line |
 | `Ctrl + n`                   | Toggle search and replace modes           |
-| `Enter`                      | Execute search (for large folders)        |
+| `Ctrl + g`                   | Toggle searching hidden files             |
+| `Enter`                      | Execute search (large folders / hidden)   |
 | `g` / `Left` / `h`           | Go to top of the list                     |
 | `G` / `Right` / `l`          | Go to bottom of the list                  |
 | `j` / `Down`                 | Move to the next item                     |

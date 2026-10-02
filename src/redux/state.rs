@@ -26,6 +26,7 @@ pub struct State {
   pub previous_focused_screen: FocusedScreen,
   pub help_dialog_visible: bool,
   pub is_large_folder: bool,
+  pub include_hidden: bool,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -155,5 +156,15 @@ pub struct SubMatch {
 impl State {
   pub fn new(project_root: PathBuf) -> Self {
     Self { project_root, is_large_folder: false, ..Default::default() }
+  }
+
+  pub fn with_include_hidden(self, include_hidden: bool) -> Self {
+    Self { include_hidden, ..self }
+  }
+
+  /// Search is only triggered by `Enter` (not on every key press) when the folder
+  /// is large or hidden files are included.
+  pub fn requires_manual_search(&self) -> bool {
+    self.is_large_folder || self.include_hidden
   }
 }

@@ -9,5 +9,6 @@
     "<Ctrl-o>": "ProcessReplace",
     "<Ctrl-b>": "ShowHelp",
     "<Ctrl-n>": "ToggleInputMode",
+    "<Ctrl-g>": "ToggleHiddenFiles",
   }
 }
