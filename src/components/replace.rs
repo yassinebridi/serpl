@@ -10,7 +10,7 @@ use tui_input::{backend::crossterm::EventHandler, Input};
 use super::{Component, Frame};
 use crate::{
   action::{AppAction, TuiAction},
-  config::{Config, KeyBindings},
+  config::{find_keys_for_value, is_bound_key, Config, KeyBindings},
   layout::get_layout,
   mode::Mode,
   redux::{
@@ -73,9 +73,12 @@ impl Component for Replace {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::ReplaceInput {
+      let toggle_input_mode_keybindings =
+        find_keys_for_value(&self.config.keybindings.0, AppAction::Action(Action::ToggleInputMode));
+
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
-        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+        _ if is_bound_key(&toggle_input_mode_keybindings, &key) => {
           let replace_text_kind = match state.replace_text.kind {
             ReplaceTextKind::Simple => ReplaceTextKind::PreserveCase,
             ReplaceTextKind::PreserveCase => ReplaceTextKind::DeleteLine,

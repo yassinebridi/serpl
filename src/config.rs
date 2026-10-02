@@ -14,6 +14,7 @@ use serde_json::Value as JsonValue;
 use crate::{
   action::{AppAction, TuiAction},
   mode::Mode,
+  redux::action::Action,
 };
 
 const CONFIG: &str = include_str!("../.config/config.json5");
@@ -65,10 +66,7 @@ impl Config {
 
     let mut cfg: Self = builder.build()?.try_deserialize()?;
 
-    let user_bindings = &mut cfg.keybindings;
-    for (key, cmd) in default_config.keybindings.iter() {
-      user_bindings.entry(key.clone()).or_insert_with(|| cmd.clone());
-    }
+    merge_default_keybindings(&mut cfg.keybindings, &default_config.keybindings);
 
     for (mode, default_styles) in default_config.styles.iter() {
       let user_styles = cfg.styles.entry(*mode).or_default();
@@ -381,6 +379,49 @@ fn parse_color(s: &str) -> Option<Color> {
   }
 }
 
+/// Adds default keybindings the user hasn't overridden.
+///
+/// `ToggleInputMode` is remappable: if the user binds it to any key, its default
+/// key is dropped so the old key (e.g. `Ctrl-n`) is freed for other uses.
+fn merge_default_keybindings(user_bindings: &mut KeyBindings, default_bindings: &KeyBindings) {
+  let toggle = AppAction::Action(Action::ToggleInputMode);
+  let user_remapped_toggle = user_bindings.values().any(|v| v == &toggle);
+  for (key, cmd) in default_bindings.iter() {
+    if user_remapped_toggle && cmd == &toggle {
+      continue;
+    }
+    user_bindings.entry(key.clone()).or_insert_with(|| cmd.clone());
+  }
+}
+
+pub fn find_keys_for_value(
+  key_bindings: &HashMap<Vec<KeyEvent>, AppAction>,
+  action: AppAction,
+) -> Option<Vec<Vec<KeyEvent>>> {
+  let mut bound_keys = Vec::new();
+  for (key, value) in key_bindings.iter() {
+    if value == &action {
+      bound_keys.push(key.clone());
+    }
+  }
+  if bound_keys.is_empty() {
+    None
+  } else {
+    Some(bound_keys)
+  }
+}
+
+pub fn is_bound_key(bound_keys: &Option<Vec<Vec<KeyEvent>>>, key: &KeyEvent) -> bool {
+  if let Some(bound_keys) = bound_keys {
+    for keys in bound_keys {
+      if keys.contains(key) {
+        return true;
+      }
+    }
+  }
+  false
+}
+
 #[cfg(test)]
 mod tests {
   use pretty_assertions::assert_eq;
@@ -494,5 +535,46 @@ mod tests {
     assert_eq!(parse_key_event("CTRL-a").unwrap(), KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL));
 
     assert_eq!(parse_key_event("AlT-eNtEr").unwrap(), KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+  }
+
+  fn bindings(pairs: &[(&str, AppAction)]) -> KeyBindings {
+    KeyBindings(pairs.iter().map(|(k, v)| (parse_key_sequence(k).unwrap(), v.clone())).collect())
+  }
+
+  #[test]
+  fn test_default_config_binds_ctrl_n_to_toggle_input_mode() {
+    let defaults: Config = json5::from_str(CONFIG).unwrap();
+    let keys = find_keys_for_value(&defaults.keybindings.0, AppAction::Action(Action::ToggleInputMode)).unwrap();
+    assert_eq!(keys, vec![parse_key_sequence("<Ctrl-n>").unwrap()]);
+  }
+
+  #[test]
+  fn test_merge_keeps_default_toggle_when_not_remapped() {
+    let toggle = AppAction::Action(Action::ToggleInputMode);
+    let defaults = bindings(&[("<Ctrl-n>", toggle.clone())]);
+    let mut user = bindings(&[]);
+    merge_default_keybindings(&mut user, &defaults);
+    assert_eq!(user.get(&parse_key_sequence("<Ctrl-n>").unwrap()), Some(&toggle));
+  }
+
+  #[test]
+  fn test_merge_drops_default_toggle_when_remapped() {
+    let toggle = AppAction::Action(Action::ToggleInputMode);
+    let defaults = bindings(&[("<Ctrl-n>", toggle.clone()), ("<Ctrl-c>", AppAction::Tui(TuiAction::Quit))]);
+    let mut user = bindings(&[("<Ctrl-t>", toggle.clone())]);
+    merge_default_keybindings(&mut user, &defaults);
+    assert_eq!(user.get(&parse_key_sequence("<Ctrl-t>").unwrap()), Some(&toggle));
+    assert_eq!(user.get(&parse_key_sequence("<Ctrl-n>").unwrap()), None);
+    // Other defaults are still merged in.
+    assert_eq!(user.get(&parse_key_sequence("<Ctrl-c>").unwrap()), Some(&AppAction::Tui(TuiAction::Quit)));
+  }
+
+  #[test]
+  fn test_merge_ctrl_n_can_be_reassigned() {
+    let toggle = AppAction::Action(Action::ToggleInputMode);
+    let defaults = bindings(&[("<Ctrl-n>", toggle)]);
+    let mut user = bindings(&[("<Ctrl-n>", AppAction::Tui(TuiAction::Quit))]);
+    merge_default_keybindings(&mut user, &defaults);
+    assert_eq!(user.get(&parse_key_sequence("<Ctrl-n>").unwrap()), Some(&AppAction::Tui(TuiAction::Quit)));
   }
 }

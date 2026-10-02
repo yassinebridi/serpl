@@ -8,5 +8,6 @@
     "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
     "<Ctrl-b>": "ShowHelp",
+    "<Ctrl-n>": "ToggleInputMode",
   }
 }

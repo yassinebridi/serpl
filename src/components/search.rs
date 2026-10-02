@@ -16,7 +16,7 @@ use super::{Component, Frame};
 use crate::{
   action::{AppAction, TuiAction},
   components::notifications::NotificationEnum,
-  config::{Config, KeyBindings},
+  config::{find_keys_for_value, is_bound_key, Config, KeyBindings},
   layout::get_layout,
   redux::{
     action::Action,
@@ -100,9 +100,12 @@ impl Component for Search {
 
   fn handle_key_events(&mut self, key: KeyEvent, state: &State) -> Result<Option<AppAction>> {
     if state.focused_screen == FocusedScreen::SearchInput {
+      let toggle_input_mode_keybindings =
+        find_keys_for_value(&self.config.keybindings.0, AppAction::Action(Action::ToggleInputMode));
+
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
-        (KeyCode::Char('n'), KeyModifiers::CONTROL) => {
+        _ if is_bound_key(&toggle_input_mode_keybindings, &key) => {
           #[cfg(feature = "ast_grep")]
           let search_text_kind = match state.search_text.kind {
             SearchTextKind::Simple => SearchTextKind::MatchCase,
@@ -131,7 +134,7 @@ impl Component for Search {
           self.input.handle_event(&crossterm::event::Event::Key(key));
           let key_bindings = self.config.keybindings.clone();
           let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
-          if !is_quit_key(&quit_keys, &key) {
+          if !is_bound_key(&quit_keys, &key) {
             self.handle_input(key, state);
           }
           Ok(None)
@@ -140,7 +143,7 @@ impl Component for Search {
           self.input.handle_event(&crossterm::event::Event::Key(key));
           let key_bindings = self.config.keybindings.clone();
           let quit_keys = find_keys_for_value(&key_bindings.0, AppAction::Tui(TuiAction::Quit));
-          if !is_quit_key(&quit_keys, &key) {
+          if !is_bound_key(&quit_keys, &key) {
             self.handle_input(key, state);
           }
           Ok(None)
@@ -209,32 +212,4 @@ impl Component for Search {
     f.render_widget(search_widget, layout.search_input);
     Ok(())
   }
-}
-
-fn find_keys_for_value(
-  key_bindings: &HashMap<Vec<KeyEvent>, AppAction>,
-  quit: AppAction,
-) -> Option<Vec<Vec<KeyEvent>>> {
-  let mut quit_keys = Vec::new();
-  for (key, value) in key_bindings.iter() {
-    if value == &quit {
-      quit_keys.push(key.clone());
-    }
-  }
-  if quit_keys.is_empty() {
-    None
-  } else {
-    Some(quit_keys)
-  }
-}
-
-fn is_quit_key(quit_keys: &Option<Vec<Vec<KeyEvent>>>, key: &KeyEvent) -> bool {
-  if let Some(quit_keys) = quit_keys {
-    for keys in quit_keys {
-      if keys.contains(key) {
-        return true;
-      }
-    }
-  }
-  false
 }

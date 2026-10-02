@@ -24,6 +24,7 @@ pub enum Action {
   SetActiveTab { tab: Tab },
   LoopOverTabs,
   BackLoopOverTabs,
+  ToggleInputMode,
   ChangeMode { mode: Mode },
   SetGlobalLoading { global_loading: bool },
   ResetState,

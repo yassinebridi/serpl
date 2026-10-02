@@ -97,14 +97,17 @@ impl<'de> Deserialize<'de> for AppAction {
           // Redux actions
           "LoopOverTabs" => Ok(AppAction::Action(Action::LoopOverTabs)),
           "BackLoopOverTabs" => Ok(AppAction::Action(Action::BackLoopOverTabs)),
+          "ToggleInputMode" => Ok(AppAction::Action(Action::ToggleInputMode)),
           "SearchTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::Search })),
           "ReplaceTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::Replace })),
           "SearchResultTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult })),
           "InputMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Input })),
           "NormalMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Normal })),
-          "ShowHelp" => Ok(AppAction::Action(Action::SetDialog {
-            dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),
-          })),
+          "ShowHelp" => {
+            Ok(AppAction::Action(Action::SetDialog {
+              dialog: Some(Dialog::HelpDialog(HelpDialogState { show: true })),
+            }))
+          },
           // Redux Thunk Actions
           "ProcessReplace" => Ok(AppAction::Thunk(ThunkAction::ProcessReplace(ForceReplace(false)))),
           _ => Err(E::custom(format!("Unknown Action variant: {value}"))),

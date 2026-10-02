@@ -167,7 +167,8 @@ Default key bindings can be customized through the `config.json` file.
     "<Tab>": "LoopOverTabs",
     "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
-    "<Ctrl-b>": "ShowHelp"
+    "<Ctrl-b>": "ShowHelp",
+    "<Ctrl-n>": "ToggleInputMode"
   }
 }
 ```
@@ -184,6 +185,7 @@ Default key bindings can be customized through the `config.json` file.
     "<Backtab>": "BackLoopOverTabs",
     "<Ctrl-o>": "ProcessReplace",
     "<Ctrl-b>": "ShowHelp",
+    "<Ctrl-n>": "ToggleInputMode",
   },
 }
 ```
@@ -199,6 +201,7 @@ keybindings:
   "<Backtab>": "BackLoopOverTabs"
   "<Ctrl-o>": "ProcessReplace"
   "<Ctrl-b>": "ShowHelp"
+  "<Ctrl-n>": "ToggleInputMode"
 ```
 </details>
 <details>
@@ -212,6 +215,7 @@ keybindings:
 "<Backtab>" = "BackLoopOverTabs"
 "<Ctrl-o>" = "ProcessReplace"
 "<Ctrl-b>" = "ShowHelp"
+"<Ctrl-n>" = "ToggleInputMode"
 ```
 </details>
 <details>
@@ -225,10 +229,13 @@ keybindings:
 <Backtab> = BackLoopOverTabs
 <Ctrl-o> = ProcessReplace
 <Ctrl-b> = ShowHelp
+<Ctrl-n> = ToggleInputMode
 ```
 </details>
 
 You can customize the key bindings by modifying the configuration file in the format of your choice.
+
+To remap the search/replace mode toggle (default `Ctrl-n`), bind `ToggleInputMode` to another key, e.g. `"<Ctrl-t>": "ToggleInputMode"`. The default `Ctrl-n` is then released and can be reused. Note that `Tab`, `Shift-Tab` and `Ctrl-b` cannot be used for this action.
 
 ## Panes
 

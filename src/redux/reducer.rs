@@ -127,10 +127,12 @@ pub fn reducer(state: State, action: Action) -> State {
         ..state
       }
     },
-    Action::SetFocusedScreen { screen } => State {
-      previous_focused_screen: state.focused_screen,
-      focused_screen: screen.unwrap_or(FocusedScreen::SearchInput),
-      ..state
+    Action::SetFocusedScreen { screen } => {
+      State {
+        previous_focused_screen: state.focused_screen,
+        focused_screen: screen.unwrap_or(FocusedScreen::SearchInput),
+        ..state
+      }
     },
     Action::RemoveFileFromList { index } => {
       let mut new_search_result = state.search_result.clone();
@@ -167,15 +169,18 @@ pub fn reducer(state: State, action: Action) -> State {
         state
       }
     },
+    Action::ToggleInputMode => state,
   }
 }
 
 fn check_dialog_visible(state: &State) -> bool {
   match &state.dialog {
-    Some(dialog) => match dialog {
-      Dialog::ConfirmGitDirectory(dialog) => dialog.show,
-      Dialog::ConfirmReplace(dialog) => dialog.show,
-      Dialog::HelpDialog(dialog) => dialog.show,
+    Some(dialog) => {
+      match dialog {
+        Dialog::ConfirmGitDirectory(dialog) => dialog.show,
+        Dialog::ConfirmReplace(dialog) => dialog.show,
+        Dialog::HelpDialog(dialog) => dialog.show,
+      }
     },
     None => false,
   }
