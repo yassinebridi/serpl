@@ -22,6 +22,7 @@ pub enum ThunkAction {
   RemoveFileFromList(usize),
   RemoveLineFromFile(usize, usize),
   ProcessSingleFileReplace(usize),
+  ProcessSelectedFilesReplace(Vec<usize>),
   ProcessLineReplace(usize, usize),
 }
 
@@ -40,6 +41,9 @@ where
     ThunkAction::ToggleHiddenFiles => Box::new(toggle_hidden_files::ToggleHiddenFilesThunk::new(command_tx)),
     ThunkAction::ProcessReplace(force_replace) => {
       Box::new(process_replace::ProcessReplaceThunk::new(command_tx, force_replace))
+    },
+    ThunkAction::ProcessSelectedFilesReplace(indices) => {
+      Box::new(process_single_file_replace::ProcessSingleFileReplaceThunk::new_many(command_tx, indices))
     },
     ThunkAction::ProcessSingleFileReplace(index) => {
       Box::new(process_single_file_replace::ProcessSingleFileReplaceThunk::new(command_tx, index))
