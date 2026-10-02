@@ -165,6 +165,37 @@ mod tests {
   }
 
   #[test]
+  fn named_groups_are_expanded() {
+    assert_eq!(replace(r"(?P<k>\w+)=(?P<v>\w+)", "${v}=${k}", SearchTextKind::Regex, "a=b c=d"), "b=a d=c");
+  }
+
+  #[test]
+  fn escaped_dollar_is_literal() {
+    assert_eq!(replace(r"(\d+)", "$$$1", SearchTextKind::Regex, "cost 5"), "cost $5");
+  }
+
+  #[test]
+  fn missing_group_expands_to_empty() {
+    assert_eq!(replace(r"(a)", "[$2]", SearchTextKind::Regex, "a"), "[]");
+  }
+
+  #[test]
+  fn delete_line_ignores_captures() {
+    let kind = SearchTextKind::Regex;
+    let re = get_search_regex("(a)", &kind);
+    let caps = re.captures("a").unwrap();
+    assert_eq!(apply_replace_captures(&caps, "$1", &ReplaceTextKind::DeleteLine, &kind), "");
+  }
+
+  #[test]
+  fn preserve_case_applies_after_expansion() {
+    let kind = SearchTextKind::Regex;
+    let re = get_search_regex("(hello)", &kind);
+    let caps = re.captures("HELLO").unwrap();
+    assert_eq!(apply_replace_captures(&caps, "bye-$1", &ReplaceTextKind::PreserveCase, &kind), "BYE-HELLO");
+  }
+
+  #[test]
   fn non_regex_search_keeps_dollar_literal() {
     assert_eq!(replace("a", "$1", SearchTextKind::Simple, "a"), "$1");
   }
