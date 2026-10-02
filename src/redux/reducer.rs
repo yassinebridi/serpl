@@ -109,7 +109,8 @@ pub fn reducer(state: State, action: Action) -> State {
     },
     Action::ChangeMode { mode } => State { mode, ..state },
     Action::SetGlobalLoading { global_loading } => State { global_loading, ..state },
-    Action::ResetState => State::new(state.project_root.clone()),
+    Action::ResetState => State::new(state.project_root.clone()).with_include_hidden(state.include_hidden),
+    Action::SetIncludeHidden { include_hidden } => State { include_hidden, ..state },
     Action::SetNotification { message, show, ttl, color } => {
       State { notification: NotificationState { message, show, ttl, color }, ..state }
     },
@@ -183,5 +184,44 @@ fn check_dialog_visible(state: &State) -> bool {
       }
     },
     None => false,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::path::PathBuf;
+
+  use super::*;
+
+  #[test]
+  fn hidden_files_are_off_by_default() {
+    assert!(!State::new(PathBuf::from(".")).include_hidden);
+  }
+
+  #[test]
+  fn set_include_hidden_updates_state() {
+    let state = reducer(State::default(), Action::SetIncludeHidden { include_hidden: true });
+    assert!(state.include_hidden);
+    let state = reducer(state, Action::SetIncludeHidden { include_hidden: false });
+    assert!(!state.include_hidden);
+  }
+
+  #[test]
+  fn reset_state_keeps_include_hidden() {
+    let state = State::new(PathBuf::from("/x")).with_include_hidden(true);
+    let state = reducer(state, Action::ResetState);
+    assert!(state.include_hidden);
+    assert_eq!(state.project_root, PathBuf::from("/x"));
+  }
+
+  #[test]
+  fn manual_search_required_for_hidden_or_large_folder() {
+    let mut state = State::default();
+    assert!(!state.requires_manual_search());
+    state.include_hidden = true;
+    assert!(state.requires_manual_search());
+    state.include_hidden = false;
+    state.is_large_folder = true;
+    assert!(state.requires_manual_search());
   }
 }

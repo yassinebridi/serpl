@@ -25,6 +25,7 @@ pub enum Action {
   LoopOverTabs,
   BackLoopOverTabs,
   ToggleInputMode,
+  SetIncludeHidden { include_hidden: bool },
   ChangeMode { mode: Mode },
   SetGlobalLoading { global_loading: bool },
   ResetState,

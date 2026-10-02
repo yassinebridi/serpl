@@ -62,9 +62,9 @@ impl Search {
     let search_text_action = AppAction::Action(Action::SetSearchText { text: query.to_string() });
     let process_search_thunk = AppAction::Thunk(ThunkAction::ProcessSearch);
 
-    if state.is_large_folder && key.code != KeyCode::Enter {
+    if state.requires_manual_search() && key.code != KeyCode::Enter {
       tx.send(search_text_action).unwrap();
-    } else if !state.is_large_folder || key.code == KeyCode::Enter {
+    } else {
       self.debounce_timer = Some(tokio::spawn(async move {
         tokio::time::sleep(DEBOUNCE_DURATION).await;
         tx.send(search_text_action).unwrap();
@@ -103,8 +103,12 @@ impl Component for Search {
       let toggle_input_mode_keybindings =
         find_keys_for_value(&self.config.keybindings.0, AppAction::Action(Action::ToggleInputMode));
 
+      let toggle_hidden_keybindings =
+        find_keys_for_value(&self.config.keybindings.0, AppAction::Thunk(ThunkAction::ToggleHiddenFiles));
+
       match (key.code, key.modifiers) {
         (KeyCode::Tab, _) | (KeyCode::BackTab, _) | (KeyCode::Char('b'), KeyModifiers::CONTROL) => Ok(None),
+        _ if is_bound_key(&toggle_hidden_keybindings, &key) => Ok(None),
         _ if is_bound_key(&toggle_input_mode_keybindings, &key) => {
           #[cfg(feature = "ast_grep")]
           let search_text_kind = match state.search_text.kind {
@@ -183,10 +187,15 @@ impl Component for Search {
       SearchTextKind::AstGrep => "[AST Grep]",
     };
 
-    let block = Block::bordered()
+    let mut block = Block::bordered()
       .border_type(BorderType::Rounded)
       .title_top(Line::from("Search").left_aligned())
       .title_top(Line::from(search_kind).right_aligned());
+    if state.include_hidden {
+      block = block.title_top(
+        Line::from("[Hidden files: press Enter to search]").style(Style::default().fg(Color::Yellow)).centered(),
+      );
+    }
 
     let block = if state.focused_screen == FocusedScreen::SearchInput {
       block.border_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))

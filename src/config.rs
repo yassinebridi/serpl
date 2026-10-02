@@ -14,7 +14,7 @@ use serde_json::Value as JsonValue;
 use crate::{
   action::{AppAction, TuiAction},
   mode::Mode,
-  redux::action::Action,
+  redux::{action::Action, thunk::ThunkAction},
 };
 
 const CONFIG: &str = include_str!("../.config/config.json5");
@@ -546,6 +546,13 @@ mod tests {
     let defaults: Config = json5::from_str(CONFIG).unwrap();
     let keys = find_keys_for_value(&defaults.keybindings.0, AppAction::Action(Action::ToggleInputMode)).unwrap();
     assert_eq!(keys, vec![parse_key_sequence("<Ctrl-n>").unwrap()]);
+  }
+
+  #[test]
+  fn test_default_config_binds_ctrl_g_to_toggle_hidden_files() {
+    let defaults: Config = json5::from_str(CONFIG).unwrap();
+    let keys = find_keys_for_value(&defaults.keybindings.0, AppAction::Thunk(ThunkAction::ToggleHiddenFiles)).unwrap();
+    assert_eq!(keys, vec![parse_key_sequence("<Ctrl-g>").unwrap()]);
   }
 
   #[test]
