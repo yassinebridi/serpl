@@ -53,8 +53,12 @@ impl SearchResult {
     }
   }
 
-  fn select_all(&mut self, state: &State) {
-    self.selected_files = state.search_result.list.iter().map(|f| f.path.clone()).collect();
+  fn toggle_select_all(&mut self, state: &State) {
+    if self.selected_files.len() == state.search_result.list.len() {
+      self.selected_files.clear();
+    } else {
+      self.selected_files = state.search_result.list.iter().map(|f| f.path.clone()).collect();
+    }
   }
 
   /// Indices of the marked files in descending order, so removing them one by one keeps the rest valid.
@@ -71,17 +75,6 @@ impl SearchResult {
     indices
   }
 
-  fn delete_selected_files(&mut self, state: &State) {
-    let indices = self.marked_indices(state);
-    for index in &indices {
-      self.command_tx.as_ref().unwrap().send(AppAction::Thunk(ThunkAction::RemoveFileFromList(*index))).unwrap();
-    }
-    self.selected_files.clear();
-    let remaining = state.search_result.list.len() - indices.len();
-    let current = self.state.selected().unwrap_or(0);
-    self.state.select(if remaining == 0 { None } else { Some(current.min(remaining - 1)) });
-  }
-
   fn replace_selected_files(&mut self, state: &State) {
     for index in self.marked_indices(state) {
       self.command_tx.as_ref().unwrap().send(AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(index))).unwrap();
@@ -90,10 +83,6 @@ impl SearchResult {
   }
 
   fn delete_file(&mut self, state: &State) {
-    if !self.selected_files.is_empty() {
-      self.delete_selected_files(state);
-      return;
-    }
     if let Some(selected_index) = self.state.selected() {
       if selected_index < state.search_result.list.len() {
         let remove_file_from_list_thunk = AppAction::Thunk(ThunkAction::RemoveFileFromList(selected_index));
@@ -255,10 +244,7 @@ impl SearchResult {
         self.toggle_select(state);
       },
       (KeyCode::Char('a'), _) => {
-        self.select_all(state);
-      },
-      (KeyCode::Char('A'), _) => {
-        self.selected_files.clear();
+        self.toggle_select_all(state);
       },
       (KeyCode::Char('d'), _) => {
         self.delete_file(state);

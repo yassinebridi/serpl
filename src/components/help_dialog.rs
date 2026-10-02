@@ -47,7 +47,7 @@ impl HelpDialog {
   // }
 
   fn global_keybindings() -> String {
-    "- Ctrl-c: Quit\n- Ctrl-d: Quit\n- Ctrl-b: Help dialog\n- Ctrl-o: Process Replace For All Files\n- Ctrl-n: Loop through search and replace modes\n- Ctrl-g: Toggle hidden files search\n- Enter: Open file in preview\n- Space: Select/Deselect file\n- a/A: Select all files/Clear selection\n- d: delete selected files (or current file/line)\n- r: replace selected files (or current file/line)".to_string()
+    "- Ctrl-c: Quit\n- Ctrl-d: Quit\n- Ctrl-b: Help dialog\n- Ctrl-o: Process Replace For All Files\n- Ctrl-n: Loop through search and replace modes\n- Ctrl-g: Toggle hidden files search\n- Enter: Open file in preview\n- Space: Select/Deselect file\n- a: Select/Deselect all files\n- d: delete file/delete line from the replace process\n- r: replace selected files (or current file/line)".to_string()
   }
 
   fn navigation_keybindings() -> String {
