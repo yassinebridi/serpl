@@ -35,7 +35,7 @@ https://github.com/yassinebridi/serpl/assets/18403595/348506704-73336074-bfaf-4a
 ## Features
 
 - Search for keywords across an entire project folder, with options for case sensitivity, AST Grep and more.
-- Replace keywords with options for preserving case, AST Grep and more.
+- Replace keywords with options for preserving case, AST Grep and more, including regex capture groups (`$1`).
 - Interactive preview of search results.
 - Keyboard navigation for efficient workflow.
 - Configurable key bindings and search modes.
@@ -271,6 +271,10 @@ To remap the search/replace mode toggle (default `Ctrl-n`), bind `ToggleInputMod
   - Simple: Replace all occurrences of the keyword.
   - Preserve Case: Replace occurrences while preserving the case of the keyword.
   - AST Grep: Replace occurrences using AST Grep.
+- Capture groups: when the search mode is Regex, the replacement can reference groups from the search pattern with `$1`, `$2`, or `${name}` for named groups. Use `$$` for a literal `$`.
+  - Example: search `(\w+)@(\w+)` and replace with `$2:$1` turns `user@host` into `host:user`.
+  - A group followed by a letter, digit or underscore needs braces: `${1}_suffix`, since `$1_suffix` is read as a group named `1_suffix`.
+  - In other search modes `$` is treated literally.
 
 ### Search Results Pane
 

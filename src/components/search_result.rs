@@ -76,9 +76,13 @@ impl SearchResult {
   }
 
   fn replace_selected_files(&mut self, state: &State) {
-    for index in self.marked_indices(state) {
-      self.command_tx.as_ref().unwrap().send(AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(index))).unwrap();
-    }
+    let indices = self.marked_indices(state);
+    self
+      .command_tx
+      .as_ref()
+      .unwrap()
+      .send(AppAction::Thunk(ThunkAction::ProcessSelectedFilesReplace(indices)))
+      .unwrap();
     self.selected_files.clear();
   }
 

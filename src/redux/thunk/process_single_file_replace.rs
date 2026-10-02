@@ -26,30 +26,47 @@ use crate::{
 
 pub struct ProcessSingleFileReplaceThunk {
   command_tx: Arc<UnboundedSender<AppAction>>,
-  file_index: usize,
+  /// Indices into the result list, in descending order so removing one keeps the rest valid.
+  file_indices: Vec<usize>,
 }
 
 impl ProcessSingleFileReplaceThunk {
   pub fn new(command_tx: Arc<UnboundedSender<AppAction>>, file_index: usize) -> Self {
-    Self { command_tx, file_index }
+    Self { command_tx, file_indices: vec![file_index] }
   }
 
-  async fn process_ast_grep_replace(&self, store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>) {
+  /// Replaces several files one after another in a single thunk. Thunks are spawned concurrently, so
+  /// dispatching one per file would race on the shifting list indices.
+  pub fn new_many(command_tx: Arc<UnboundedSender<AppAction>>, mut file_indices: Vec<usize>) -> Self {
+    file_indices.sort_unstable_by(|a, b| b.cmp(a));
+    file_indices.dedup();
+    Self { command_tx, file_indices }
+  }
+
+  async fn process_ast_grep_replace(
+    &self,
+    store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>,
+    file_index: usize,
+  ) {
     let search_list = store.select(|state: &State| state.search_result.clone()).await;
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
-    if let Some(search_result) = search_list.list.get(self.file_index) {
+    if let Some(search_result) = search_list.list.get(file_index) {
       replace_file_ast(search_result, &search_text_state, &replace_text_state);
     }
   }
 
-  async fn process_normal_replace(&self, store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>) {
+  async fn process_normal_replace(
+    &self,
+    store: &Arc<impl StoreApi<State, Action> + Send + Sync + 'static>,
+    file_index: usize,
+  ) {
     let search_list = store.select(|state: &State| state.search_result.clone()).await;
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
-    if let Some(search_result) = search_list.list.get(self.file_index) {
+    if let Some(search_result) = search_list.list.get(file_index) {
       let file_path = &search_result.path;
       let content = fs::read_to_string(file_path).expect("Unable to read file");
       let mut lines: Vec<String> = content.lines().map(String::from).collect();
@@ -79,17 +96,19 @@ where
     let search_text_state = store.select(|state: &State| state.search_text.clone()).await;
     let replace_text_state = store.select(|state: &State| state.replace_text.clone()).await;
 
-    #[cfg(feature = "ast_grep")]
-    if search_text_state.kind == SearchTextKind::AstGrep {
-      self.process_ast_grep_replace(&store).await;
-    } else {
-      self.process_normal_replace(&store).await;
+    for &file_index in &self.file_indices {
+      #[cfg(feature = "ast_grep")]
+      if search_text_state.kind == SearchTextKind::AstGrep {
+        self.process_ast_grep_replace(&store, file_index).await;
+      } else {
+        self.process_normal_replace(&store, file_index).await;
+      }
+
+      #[cfg(not(feature = "ast_grep"))]
+      self.process_normal_replace(&store, file_index).await;
+
+      store.dispatch(Action::RemoveFileFromList { index: file_index }).await;
     }
-
-    #[cfg(not(feature = "ast_grep"))]
-    self.process_normal_replace(&store).await;
-
-    store.dispatch(Action::RemoveFileFromList { index: self.file_index }).await;
 
     let done_processing_status_action = AppAction::Tui(TuiAction::Status("".to_string()));
     self.command_tx.send(done_processing_status_action).unwrap();
@@ -97,5 +116,37 @@ where
     let notification_action =
       AppAction::Tui(TuiAction::Notify(NotificationEnum::Info("File replacement completed successfully".to_string())));
     self.command_tx.send(notification_action).unwrap();
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use redux_rs::Store;
+
+  use super::*;
+  use crate::redux::{reducer::reducer, state::SearchResultState};
+
+  #[tokio::test]
+  async fn replacing_every_file_empties_the_list() {
+    let dir = std::env::temp_dir().join("serpl_multi_replace_test");
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(&dir).unwrap();
+    let mut state = State::default();
+    for i in 0..4 {
+      let path = dir.join(format!("f{i}.txt")).to_string_lossy().to_string();
+      fs::write(&path, "foo\n").unwrap();
+      state.search_result.list.push(SearchResultState { path, ..Default::default() });
+    }
+    state.search_text.text = "foo".into();
+    state.replace_text.text = "bar".into();
+
+    let store = Arc::new(Store::new_with_state(reducer, state));
+    let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+    let tx = Arc::new(tx);
+    let thunk = ProcessSingleFileReplaceThunk::new_many(tx, vec![2, 0, 3, 1]);
+    thunk.execute(store.clone()).await;
+    assert_eq!(fs::read_to_string(dir.join("f3.txt")).unwrap(), "bar\n");
+    let left = store.select(|s: &State| s.search_result.list.len()).await;
+    assert_eq!(left, 0);
   }
 }

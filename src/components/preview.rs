@@ -21,7 +21,7 @@ use crate::{
     action::Action,
     state::{FocusedScreen, ReplaceTextKind, SearchResultState, SearchTextKind, State, SubMatch},
     thunk::ThunkAction,
-    utils::{apply_replace, get_search_regex},
+    utils::{apply_replace, apply_replace_captures, get_search_regex},
   },
   tabs::Tab,
 };
@@ -115,6 +115,7 @@ impl Preview {
     &self,
     full_match: &'a str,
     submatches: &[SubMatch],
+    search_text: &str,
     replace_text: &'a str,
     replacement: &'a Option<String>,
     search_kind: &SearchTextKind,
@@ -187,7 +188,15 @@ impl Preview {
               if replace_text.is_empty() {
                 spans.push(Span::styled(&matched_text[match_start..match_end], Style::default().bg(Color::Blue)));
               } else {
-                let replacement = apply_replace(&matched_text[match_start..match_end], replace_text, replace_kind);
+                let matched = &matched_text[match_start..match_end];
+                let replacement = if *search_kind == SearchTextKind::Regex {
+                  get_search_regex(search_text, search_kind)
+                    .captures(matched)
+                    .map(|caps| apply_replace_captures(&caps, replace_text, replace_kind, search_kind))
+                    .unwrap_or_else(|| apply_replace(matched, replace_text, replace_kind))
+                } else {
+                  apply_replace(matched, replace_text, replace_kind)
+                };
                 spans.push(Span::styled(
                   &matched_text[match_start..match_end],
                   Style::default().fg(Color::White).bg(Color::LightRed).add_modifier(Modifier::CROSSED_OUT),
@@ -337,6 +346,7 @@ impl Component for Preview {
       let formatted_lines = self.format_match_lines(
         &result.lines.as_ref().unwrap().text,
         &result.submatches,
+        &state.search_text.text,
         &state.replace_text.text,
         &result.replacement,
         &state.search_text.kind,
