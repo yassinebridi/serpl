@@ -14,7 +14,7 @@ use crate::{
     action::Action,
     state::{Match, ReplaceTextKind, ReplaceTextState, SearchTextKind, SearchTextState, State},
     thunk::ThunkAction,
-    utils::{apply_replace, get_search_regex},
+    utils::{apply_replace_captures, get_search_regex},
   },
 };
 
@@ -107,8 +107,7 @@ fn process_normal_replace(
 
     if let Some(line) = lines.get_mut(match_info.line_number - 1) {
       let replaced_line = re.replace_all(line, |caps: &regex::Captures| {
-        let matched_text = caps.get(0).unwrap().as_str();
-        apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
+        apply_replace_captures(caps, &replace_text_state.text, &replace_text_state.kind, &search_text_state.kind)
       });
       *line = replaced_line.into_owned();
     }

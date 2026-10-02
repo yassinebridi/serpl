@@ -67,8 +67,7 @@ pub fn replace_file_normal(
     let re = get_search_regex(&search_text_state.text, &search_text_state.kind);
 
     re.replace_all(&content, |caps: &regex::Captures| {
-      let matched_text = caps.get(0).unwrap().as_str();
-      apply_replace(matched_text, &replace_text_state.text, &replace_text_state.kind)
+      apply_replace_captures(caps, &replace_text_state.text, &replace_text_state.kind, &search_text_state.kind)
     })
     .to_string()
   };
@@ -103,6 +102,24 @@ pub fn get_search_regex(search_text: &str, search_kind: &SearchTextKind) -> rege
   }
 }
 
+/// Like `apply_replace`, but in regex search mode expands capture group references
+/// (`$1`, `${name}`, `$$` for a literal `$`) in the replacement text first.
+pub fn apply_replace_captures(
+  caps: &regex::Captures,
+  replace_text: &str,
+  replace_kind: &ReplaceTextKind,
+  search_kind: &SearchTextKind,
+) -> String {
+  let matched_text = caps.get(0).unwrap().as_str();
+  if *search_kind == SearchTextKind::Regex && *replace_kind != ReplaceTextKind::DeleteLine {
+    let mut expanded = String::new();
+    caps.expand(replace_text, &mut expanded);
+    apply_replace(matched_text, &expanded, replace_kind)
+  } else {
+    apply_replace(matched_text, replace_text, replace_kind)
+  }
+}
+
 pub fn apply_replace(matched_text: &str, replace_text: &str, replace_kind: &ReplaceTextKind) -> String {
   match replace_kind {
     ReplaceTextKind::Simple => replace_text.to_string(),
@@ -127,5 +144,28 @@ pub fn apply_replace(matched_text: &str, replace_text: &str, replace_kind: &Repl
     },
     #[cfg(feature = "ast_grep")]
     ReplaceTextKind::AstGrep => unreachable!(),
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn replace(search: &str, replace: &str, kind: SearchTextKind, text: &str) -> String {
+    let re = get_search_regex(search, &kind);
+    re.replace_all(text, |caps: &regex::Captures| {
+      apply_replace_captures(caps, replace, &ReplaceTextKind::Simple, &kind)
+    })
+    .to_string()
+  }
+
+  #[test]
+  fn regex_capture_groups_are_expanded() {
+    assert_eq!(replace(r"(.*)fun.*(\d+)", "\"$2$1$2\"", SearchTextKind::Regex, "my_function2()"), "\"2my_2\"()");
+  }
+
+  #[test]
+  fn non_regex_search_keeps_dollar_literal() {
+    assert_eq!(replace("a", "$1", SearchTextKind::Simple, "a"), "$1");
   }
 }
