@@ -101,6 +101,7 @@ impl<'de> Deserialize<'de> for AppAction {
           "SearchTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::Search })),
           "ReplaceTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::Replace })),
           "SearchResultTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::SearchResult })),
+          "PreviewTab" => Ok(AppAction::Action(Action::SetActiveTab { tab: Tab::Preview })),
           "InputMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Input })),
           "NormalMode" => Ok(AppAction::Action(Action::ChangeMode { mode: Mode::Normal })),
           "ShowHelp" => {

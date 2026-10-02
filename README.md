@@ -151,7 +151,11 @@ Default key bindings can be customized through the `config.json` file.
 | `j` / `Down`                 | Move to the next item                     |
 | `k` / `Up`                   | Move to the previous item                 |
 | `/`                          | Search results list                       |
-| `d`                          | Delete selected file or line              |
+| `Space`                      | Select/deselect file in the result list   |
+| `a`                          | Select/deselect all files                 |
+| `d`                          | Delete current file or line               |
+| `r`                          | Replace selected files (or current file/line) |
+| `Alt + 1..4` / `Ctrl + 1..4` | Jump to Search / Replace / Results / Preview (`Ctrl` needs a terminal with extended key support) |
 | `Esc`                        | Exit the current pane or dialog           |
 | `Enter` (in dialogs) / `y`   | Confirm action                            |
 | `Esc` (in dialogs) / `n`     | Cancel action                             |

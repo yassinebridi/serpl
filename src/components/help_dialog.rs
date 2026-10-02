@@ -47,11 +47,11 @@ impl HelpDialog {
   // }
 
   fn global_keybindings() -> String {
-    "- Ctrl-c: Quit\n- Ctrl-d: Quit\n- Ctrl-b: Help dialog\n- Ctrl-o: Process Replace For All Files\n- Ctrl-n: Loop through search and replace modes\n- Ctrl-g: Toggle hidden files search\n- Enter: Select/Deselect file\n- d: delete file/delete line from the replace process\n- r: Replace Selected File Or Line".to_string()
+    "- Ctrl-c: Quit\n- Ctrl-d: Quit\n- Ctrl-b: Help dialog\n- Ctrl-o: Process Replace For All Files\n- Ctrl-n: Loop through search and replace modes\n- Ctrl-g: Toggle hidden files search\n- Enter: Open file in preview\n- Space: Select/Deselect file\n- a: Select/Deselect all files\n- d: delete file/delete line from the replace process\n- r: replace selected files (or current file/line)".to_string()
   }
 
   fn navigation_keybindings() -> String {
-    "- Tab: Loop through panes\n- j/UpArrow: Move up\n- k/DownArrow: Move down\n- h/g/LeftArrow: Move to Top\n- l/G/RightArrow: Move to Bottom\n".to_string()
+    "- Tab: Loop through panes\n- Alt-1..4/Ctrl-1..4: Jump to pane\n- j/UpArrow: Move up\n- k/DownArrow: Move down\n- h/g/LeftArrow: Move to Top\n- l/G/RightArrow: Move to Bottom\n".to_string()
   }
 }
 

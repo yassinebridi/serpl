@@ -1,4 +1,8 @@
-use std::{collections::HashMap, default, time::Duration};
+use std::{
+  collections::{HashMap, HashSet},
+  default,
+  time::Duration,
+};
 
 use color_eyre::{eyre::Result, owo_colors::OwoColorize};
 use crossterm::event::{KeyCode, KeyEvent};
@@ -33,11 +37,49 @@ pub struct SearchResult {
   is_searching: bool,
   search_matches: Vec<usize>,
   current_match_index: usize,
+  selected_files: HashSet<String>,
 }
 
 impl SearchResult {
   pub fn new() -> Self {
     Self::default()
+  }
+
+  fn toggle_select(&mut self, state: &State) {
+    if let Some(file) = self.state.selected().and_then(|i| state.search_result.list.get(i)) {
+      if !self.selected_files.remove(&file.path) {
+        self.selected_files.insert(file.path.clone());
+      }
+    }
+  }
+
+  fn toggle_select_all(&mut self, state: &State) {
+    if self.selected_files.len() == state.search_result.list.len() {
+      self.selected_files.clear();
+    } else {
+      self.selected_files = state.search_result.list.iter().map(|f| f.path.clone()).collect();
+    }
+  }
+
+  /// Indices of the marked files in descending order, so removing them one by one keeps the rest valid.
+  fn marked_indices(&self, state: &State) -> Vec<usize> {
+    let mut indices: Vec<usize> = state
+      .search_result
+      .list
+      .iter()
+      .enumerate()
+      .filter(|(_, f)| self.selected_files.contains(&f.path))
+      .map(|(i, _)| i)
+      .collect();
+    indices.reverse();
+    indices
+  }
+
+  fn replace_selected_files(&mut self, state: &State) {
+    for index in self.marked_indices(state) {
+      self.command_tx.as_ref().unwrap().send(AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(index))).unwrap();
+    }
+    self.selected_files.clear();
   }
 
   fn delete_file(&mut self, state: &State) {
@@ -184,6 +226,10 @@ impl SearchResult {
   }
 
   fn replace_single_file(&mut self, state: &State) {
+    if !self.selected_files.is_empty() {
+      self.replace_selected_files(state);
+      return;
+    }
     if let Some(selected_index) = self.state.selected() {
       if selected_index < state.search_result.list.len() {
         let process_single_file_replace_thunk = AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(selected_index));
@@ -194,6 +240,12 @@ impl SearchResult {
 
   fn handle_local_key_events(&mut self, key: KeyEvent, state: &State) {
     match (key.code, key.modifiers) {
+      (KeyCode::Char(' '), _) => {
+        self.toggle_select(state);
+      },
+      (KeyCode::Char('a'), _) => {
+        self.toggle_select_all(state);
+      },
       (KeyCode::Char('d'), _) => {
         self.delete_file(state);
       },
@@ -331,6 +383,8 @@ impl Component for SearchResult {
     let results_to_display = &state.search_result.list;
     let search_term = self.search_input.value().to_lowercase();
 
+    self.selected_files.retain(|p| results_to_display.iter().any(|f| &f.path == p));
+
     let list_items: Vec<ListItem> = results_to_display
       .iter()
       .enumerate()
@@ -338,6 +392,12 @@ impl Component for SearchResult {
         let path = s.path.strip_prefix(format!("{project_root}/").as_str()).unwrap_or(&s.path);
         let mut spans = Vec::new();
         let mut start = 0;
+
+        if self.selected_files.contains(&s.path) {
+          spans.push(Span::styled("[x] ", Style::default().fg(Color::Green)));
+        } else {
+          spans.push(Span::raw("[ ] "));
+        }
 
         if !search_term.is_empty() {
           for (idx, _) in path.to_lowercase().match_indices(&search_term) {
