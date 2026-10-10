@@ -42,6 +42,13 @@ pub fn replace_file_ast(
   fs::write(file_path, content).expect("Unable to write file");
 }
 
+pub fn strip_line_terminator(text: &str) -> &str {
+  match text.strip_suffix('\n') {
+    Some(rest) => rest.strip_suffix('\r').unwrap_or(rest),
+    None => text,
+  }
+}
+
 pub fn replace_file_normal(
   search_result: &crate::redux::state::SearchResultState,
   search_text_state: &crate::redux::state::SearchTextState,
@@ -162,6 +169,19 @@ mod tests {
   #[test]
   fn regex_capture_groups_are_expanded() {
     assert_eq!(replace(r"(.*)fun.*(\d+)", "\"$2$1$2\"", SearchTextKind::Regex, "my_function2()"), "\"2my_2\"()");
+  }
+
+  #[test]
+  fn crlf_file_endings() {
+    assert_eq!(strip_line_terminator("let x = 1;\n"), "let x = 1;");
+    assert_eq!(strip_line_terminator("let x = 1;\r\n"), "let x = 1;");
+    assert_eq!(strip_line_terminator("No Lines Removed"), "No Lines Removed");
+    assert_eq!(strip_line_terminator(""), "");
+    assert_eq!(strip_line_terminator("foo\n\n"), "foo\n");
+    assert_eq!(strip_line_terminator("foo  \r\n"), "foo  ");
+    assert_eq!(strip_line_terminator("foo\r"), "foo\r");
+    assert_eq!(strip_line_terminator("foo\rbar\r\n"), "foo\rbar");
+    assert_eq!(strip_line_terminator("\r\n"), "");
   }
 
   #[test]
