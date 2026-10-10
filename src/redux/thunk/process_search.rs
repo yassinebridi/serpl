@@ -18,6 +18,7 @@ use crate::{
   redux::{
     action::Action,
     state::{Match, Metadata, SearchListState, SearchResultState, SearchTextKind, SearchTextState, State, SubMatch},
+    utils::strip_line_terminator,
   },
   ripgrep::{RipgrepLines, RipgrepOutput, RipgrepSummary},
 };
@@ -170,6 +171,7 @@ impl ProcessSearchThunk {
             if let Some(data) = rg_output.data {
               let path = data.path.unwrap().text;
               let line_number = data.line_number.unwrap_or_default() as usize;
+              let line_text = strip_line_terminator(&data.lines.as_ref().unwrap().text).to_string();
               let absolute_offset = data.absolute_offset.unwrap_or_default();
 
               let search_result_index = path_to_result.entry(path.clone()).or_insert_with(|| {
@@ -209,16 +211,16 @@ impl ProcessSearchThunk {
                 });
                 result.total_matches += submatches.len();
 
-                context_buffer.push_back((line_number, data.lines.unwrap().text));
+                context_buffer.push_back((line_number, line_text));
               } else {
-                context_buffer.push_back((line_number, data.lines.clone().unwrap().text));
+                context_buffer.push_back((line_number, line_text.clone()));
                 if context_buffer.len() > 4 {
                   context_buffer.pop_front();
                 }
 
                 if let Some(last_match) = result.matches.last_mut() {
                   if line_number > last_match.line_number && last_match.context_after.len() < 3 {
-                    last_match.context_after.push(data.lines.unwrap().text);
+                    last_match.context_after.push(line_text);
                   }
                 }
               }
