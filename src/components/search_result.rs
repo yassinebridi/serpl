@@ -21,6 +21,7 @@ use crate::{
     action::Action,
     state::{FocusedScreen, SearchResultState, State},
     thunk::ThunkAction,
+    utils::selection_after_removals,
   },
   tabs::Tab,
 };
@@ -77,6 +78,7 @@ impl SearchResult {
 
   fn replace_selected_files(&mut self, state: &State) {
     let indices = self.marked_indices(state);
+    self.state.select(selection_after_removals(self.state.selected(), &indices, state.search_result.list.len()));
     self
       .command_tx
       .as_ref()
@@ -238,6 +240,8 @@ impl SearchResult {
       if selected_index < state.search_result.list.len() {
         let process_single_file_replace_thunk = AppAction::Thunk(ThunkAction::ProcessSingleFileReplace(selected_index));
         self.command_tx.as_ref().unwrap().send(process_single_file_replace_thunk).unwrap();
+        let cursor = selection_after_removals(self.state.selected(), &[selected_index], state.search_result.list.len());
+        self.state.select(cursor);
       }
     }
   }

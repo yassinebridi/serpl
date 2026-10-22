@@ -5,9 +5,12 @@ use regex::Regex;
 use super::{action::Action, state::State};
 use crate::{
   mode::Mode,
-  redux::state::{
-    Dialog, FocusedScreen, NotificationState, ReplaceTextState, SearchListState, SearchResultState, SearchTextKind,
-    SearchTextState,
+  redux::{
+    state::{
+      Dialog, FocusedScreen, NotificationState, ReplaceTextState, SearchListState, SearchResultState, SearchTextKind,
+      SearchTextState,
+    },
+    utils::selection_after_removals,
   },
   tabs::Tab,
 };
@@ -137,10 +140,25 @@ pub fn reducer(state: State, action: Action) -> State {
     },
     Action::RemoveFileFromList { index } => {
       let mut new_search_result = state.search_result.clone();
-      if index < new_search_result.list.len() {
-        new_search_result.list.remove(index);
+
+      if index >= new_search_result.list.len() {
+        return state;
       }
-      State { search_result: new_search_result, ..state }
+
+      let new_previewed_index =
+        selection_after_removals(state.selected_result.index, &[index], new_search_result.list.len());
+      new_search_result.list.remove(index);
+
+      for (position, result) in new_search_result.list.iter_mut().enumerate() {
+        result.index = Some(position);
+      }
+
+      let new_selected_result = match new_previewed_index {
+        Some(position) => new_search_result.list[position].clone(),
+        None => SearchResultState::default(),
+      };
+
+      State { search_result: new_search_result, selected_result: new_selected_result, ..state }
     },
 
     Action::RemoveLineFromFile { file_index, line_index } => {
@@ -223,5 +241,44 @@ mod tests {
     state.include_hidden = false;
     state.is_large_folder = true;
     assert!(state.requires_manual_search());
+  }
+
+  fn state_with_files(count: usize, previewed: usize) -> State {
+    let mut state = State::default();
+    state.search_result.list = (0..count)
+      .map(|i| SearchResultState { index: Some(i), path: format!("f{i}.txt"), ..Default::default() })
+      .collect();
+    state.selected_result = state.search_result.list[previewed].clone();
+    state
+  }
+
+  #[test]
+  fn removing_a_file_above_the_previewed_one_keeps_the_preview() {
+    let state = reducer(state_with_files(4, 2), Action::RemoveFileFromList { index: 0 });
+    assert_eq!(state.selected_result.path, "f2.txt");
+    assert_eq!(state.selected_result.index, Some(1));
+    assert_eq!(state.search_result.list.iter().map(|r| r.index).collect::<Vec<_>>(), vec![Some(0), Some(1), Some(2)]);
+  }
+
+  #[test]
+  fn removing_a_file_below_the_previewed_one_keeps_the_preview() {
+    let state = reducer(state_with_files(4, 1), Action::RemoveFileFromList { index: 3 });
+    assert_eq!(state.selected_result.path, "f1.txt");
+    assert_eq!(state.selected_result.index, Some(1));
+  }
+
+  #[test]
+  fn removing_the_previewed_file_falls_to_the_next_one() {
+    let state = reducer(state_with_files(4, 2), Action::RemoveFileFromList { index: 2 });
+    assert_eq!(state.selected_result.path, "f3.txt");
+    assert_eq!(state.selected_result.index, Some(2));
+  }
+
+  #[test]
+  fn removing_an_out_of_bound_index_is_a_no_op() {
+    let before = state_with_files(2, 1);
+    let state = reducer(before.clone(), Action::RemoveFileFromList { index: 2 });
+    assert_eq!(state.search_result, before.search_result);
+    assert_eq!(state.selected_result, before.selected_result);
   }
 }

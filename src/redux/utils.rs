@@ -42,6 +42,17 @@ pub fn replace_file_ast(
   fs::write(file_path, content).expect("Unable to write file");
 }
 
+pub fn selection_after_removals(selected: Option<usize>, removed: &[usize], old_length: usize) -> Option<usize> {
+  let new_length = old_length - removed.len();
+  if new_length == 0 {
+    return None;
+  }
+
+  let selected = selected?;
+  let above = removed.iter().filter(|&&index| index < selected).count();
+  Some((selected - above).min(new_length - 1))
+}
+
 pub fn strip_line_terminator(text: &str) -> &str {
   match text.strip_suffix('\n') {
     Some(rest) => rest.strip_suffix('\r').unwrap_or(rest),
