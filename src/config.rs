@@ -14,7 +14,11 @@ use serde_json::Value as JsonValue;
 use crate::{
   action::{AppAction, TuiAction},
   mode::Mode,
-  redux::{action::Action, thunk::ThunkAction},
+  redux::{
+    action::Action,
+    state::{ReplaceTextKind, SearchTextKind},
+    thunk::ThunkAction,
+  },
 };
 
 const CONFIG: &str = include_str!("../.config/config.json5");
@@ -35,6 +39,10 @@ pub struct Config {
   pub keybindings: KeyBindings,
   #[serde(default)]
   pub styles: Styles,
+  #[serde(default)]
+  pub default_search_mode: SearchTextKind,
+  #[serde(default)]
+  pub default_replace_mode: ReplaceTextKind,
 }
 
 impl Config {
@@ -583,5 +591,25 @@ mod tests {
     let mut user = bindings(&[("<Ctrl-n>", AppAction::Tui(TuiAction::Quit))]);
     merge_default_keybindings(&mut user, &defaults);
     assert_eq!(user.get(&parse_key_sequence("<Ctrl-n>").unwrap()), Some(&AppAction::Tui(TuiAction::Quit)));
+  }
+
+  #[test]
+  fn test_default_modes_default_to_simple() {
+    let cfg: Config = json5::from_str("{}").unwrap();
+    assert_eq!(cfg.default_search_mode, SearchTextKind::Simple);
+    assert_eq!(cfg.default_replace_mode, ReplaceTextKind::Simple);
+  }
+
+  #[test]
+  fn test_deserialize_default_modes() {
+    let cfg: Config = json5::from_str(
+      r#"{
+      "default_search_mode": "Regex",
+      "default_replace_mode": "PreserveCase"
+    }"#,
+    )
+    .unwrap();
+    assert_eq!(cfg.default_search_mode, SearchTextKind::Regex);
+    assert_eq!(cfg.default_replace_mode, ReplaceTextKind::PreserveCase);
   }
 }
