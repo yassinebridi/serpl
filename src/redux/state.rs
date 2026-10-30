@@ -162,9 +162,39 @@ impl State {
     Self { include_hidden, ..self }
   }
 
+  pub fn with_default_text_kinds(self, search_kind: SearchTextKind, replace_kind: ReplaceTextKind) -> Self {
+    Self {
+      search_text: SearchTextState { kind: search_kind, ..self.search_text },
+      replace_text: ReplaceTextState { kind: replace_kind, ..self.replace_text },
+      ..self
+    }
+  }
+
   /// Search is only triggered by `Enter` (not on every key press) when the folder
   /// is large or hidden files are included.
   pub fn requires_manual_search(&self) -> bool {
     self.is_large_folder || self.include_hidden
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::path::PathBuf;
+
+  use super::*;
+
+  #[test]
+  fn test_with_default_text_kinds() {
+    let state =
+      State::new(PathBuf::from("/tmp")).with_default_text_kinds(SearchTextKind::Regex, ReplaceTextKind::PreserveCase);
+    assert_eq!(state.search_text.kind, SearchTextKind::Regex);
+    assert_eq!(state.replace_text.kind, ReplaceTextKind::PreserveCase);
+  }
+
+  #[test]
+  fn test_default_text_kinds_are_simple() {
+    let state = State::new(PathBuf::from("/tmp"));
+    assert_eq!(state.search_text.kind, SearchTextKind::Simple);
+    assert_eq!(state.replace_text.kind, ReplaceTextKind::Simple);
   }
 }

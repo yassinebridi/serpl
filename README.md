@@ -248,6 +248,27 @@ You can customize the key bindings by modifying the configuration file in the fo
 
 To remap the search/replace mode toggle (default `Ctrl-n`), bind `ToggleInputMode` to another key, e.g. `"<Ctrl-t>": "ToggleInputMode"`. The default `Ctrl-n` is then released and can be reused. Note that `Tab`, `Shift-Tab` and `Ctrl-b` cannot be used for this action.
 
+#### Default search and replace modes
+
+Set the mode shown when `serpl` starts (same values you cycle with `Ctrl-n`):
+
+| Key | Default | Search values | Replace values |
+| --- | --- | --- | --- |
+| `default_search_mode` | `Simple` | `Simple`, `MatchCase`, `MatchWholeWord`, `MatchCaseWholeWord`, `Regex`, `AstGrep` (with `ast_grep` feature) | |
+| `default_replace_mode` | `Simple` | | `Simple`, `PreserveCase`, `DeleteLine`, `AstGrep` (with `ast_grep` feature) |
+
+Example (JSON5):
+
+```json5
+{
+  default_search_mode: "Regex",
+  default_replace_mode: "PreserveCase",
+  keybindings: {
+    // ...
+  },
+}
+```
+
 ## Panes
 
 ### Search Input

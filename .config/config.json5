@@ -1,4 +1,7 @@
 {
+  // Optional defaults for search/replace input modes (Simple if omitted).
+  // "default_search_mode": "Regex",
+  // "default_replace_mode": "PreserveCase",
   "keybindings": {
     "<Ctrl-d>": "Quit",
     "<Ctrl-c>": "Quit",

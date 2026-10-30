@@ -121,7 +121,9 @@ impl App {
 
   pub async fn run(&mut self) -> Result<()> {
     log::info!("Starting app..");
-    let initial_state = State::new(self.project_root.clone()).with_include_hidden(self.include_hidden);
+    let initial_state = State::new(self.project_root.clone())
+      .with_include_hidden(self.include_hidden)
+      .with_default_text_kinds(self.config.default_search_mode, self.config.default_replace_mode);
     let mut state = initial_state.clone();
 
     let (action_tx, mut action_rx) = mpsc::unbounded_channel();
